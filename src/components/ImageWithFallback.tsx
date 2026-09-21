@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sprout } from 'lucide-react';
+import { getAssetUrl } from '../utils/assetPath';
 
 interface ImageWithFallbackProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   fallbackText?: string;
@@ -28,9 +29,11 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     );
   }
 
+  const resolvedSrc = getAssetUrl(src);
+
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt}
       onError={() => setHasError(true)}
       className={`${isLogo ? 'mix-blend-multiply object-contain' : ''} ${className}`}

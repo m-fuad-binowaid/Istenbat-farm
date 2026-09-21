@@ -9,6 +9,7 @@ import {
 import { TRANSLATIONS } from '../data/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
+import { getAssetUrl } from '../utils/assetPath';
 import { ImageWithFallback } from '../components/ImageWithFallback';
 import { VideoModal } from '../components/VideoModal';
 import { FarmVisualCatalog } from '../components/FarmVisualCatalog';
@@ -123,7 +124,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             return (
               <img
                 key={slide.id}
-                src={slide.src}
+                src={getAssetUrl(slide.src)}
                 alt={language === 'ar' ? slide.altAr : slide.altEn}
                 referrerPolicy="no-referrer"
                 className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out will-change-[opacity] ${

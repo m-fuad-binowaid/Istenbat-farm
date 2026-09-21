@@ -22,11 +22,21 @@ function AppContent() {
 
   // Sync with browser URL hash and path for friendly URL sharing and navigation
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#/', '').replace('#', '').trim();
-      const pathname = window.location.pathname.replace('/', '').trim();
+    const handleLocationChange = () => {
+      // 1. Check hash first (#/admin, #admin)
+      const hash = window.location.hash.replace(/^#\/?/, '').trim();
       
-      const target = hash || pathname;
+      // 2. Check path relative to base (e.g. /istenbat-farm/admin -> admin)
+      const rawPath = window.location.pathname;
+      const base = (import.meta.env.BASE_URL || '/').replace(/^\/|\/$/g, '');
+      const pathSegments = rawPath.split('/').filter(Boolean);
+      // Remove the base segment if present
+      if (base && pathSegments.length > 0 && pathSegments[0] === base) {
+        pathSegments.shift();
+      }
+      const directPath = pathSegments.join('/');
+
+      const target = hash || directPath;
       if (['home', 'about', 'products', 'experience', 'contact', 'admin'].includes(target)) {
         setRoute(target as PageRoute);
       } else {
@@ -34,12 +44,12 @@ function AppContent() {
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    window.addEventListener('popstate', handleHashChange);
+    handleLocationChange();
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
     return () => {
-      window.removeEventListener('hashchange', handleHashChange);
-      window.removeEventListener('popstate', handleHashChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
     };
   }, []);
 

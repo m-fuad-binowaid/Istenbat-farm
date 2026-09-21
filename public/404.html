@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>استنبات | ISTENBAT - المزرعة الحرفية العضوية والسياحة الريفية بالدلم</title>
+    <script>
+      // GitHub Pages SPA redirect script:
+      // Converts deep paths (e.g. /istenbat-farm/admin or /istenbat-farm/products) into hash routes
+      // so the SPA loads smoothly without 404 error on page refresh.
+      (function() {
+        var pathSegmentsToKeep = 1; // 1 for repo subpath /istenbat-farm/
+        var l = window.location;
+        var pathSegments = l.pathname.split('/').filter(Boolean);
+        
+        // If hosted at https://<username>.github.io/istenbat-farm/admin
+        var repoName = 'istenbat-farm';
+        var startIndex = pathSegments.indexOf(repoName);
+        var subRoute = '';
+        
+        if (startIndex !== -1 && startIndex < pathSegments.length - 1) {
+          subRoute = pathSegments.slice(startIndex + 1).join('/');
+        } else if (startIndex === -1 && pathSegments.length > 0) {
+          subRoute = pathSegments.join('/');
+        }
+
+        var redirectUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+          '/' + repoName + '/#/' + (subRoute || 'home') +
+          (l.search ? l.search : '');
+
+        window.location.replace(redirectUrl);
+      })();
+    </script>
+  </head>
+  <body style="font-family: sans-serif; text-align: center; padding: 40px; background-color: #F9F6F0; color: #1C3322;">
+    <p>جاري تحويلك إلى مزرعة بيت الاستنبات...</p>
+    <p style="font-size: 13px; color: #666;">Redirecting to Istenbat Farm...</p>
+  </body>
+</html>

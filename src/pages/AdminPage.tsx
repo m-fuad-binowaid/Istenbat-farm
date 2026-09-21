@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PageRoute, Product } from '../types';
 import { useFarmData } from '../context/FarmDataContext';
+import { getAssetUrl } from '../utils/assetPath';
 import {
   Lock,
   Unlock,
@@ -517,7 +518,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         {/* Thumbnail */}
                         <div className="w-20 sm:w-24 h-20 sm:h-24 rounded-2xl overflow-hidden bg-[#F4EFE6] border border-[#E7DECD] shrink-0 relative">
                           <img
-                            src={product.image}
+                            src={getAssetUrl(product.image)}
                             alt={product.nameAr}
                             className={`w-full h-full object-cover transition-opacity ${
                               isAvailable ? 'opacity-100' : 'opacity-40 grayscale'
@@ -927,7 +928,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                         title={asset.name}
                       >
                         <img
-                          src={asset.path}
+                          src={getAssetUrl(asset.path)}
                           alt={asset.name}
                           className="w-full h-full object-cover"
                         />

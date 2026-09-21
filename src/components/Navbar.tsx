@@ -4,6 +4,7 @@ import { OFFICIAL_INFO } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
+import { getAssetUrl } from '../utils/assetPath';
 import { Menu, X, Phone, Calendar, ArrowLeft, ArrowRight, Globe } from 'lucide-react';
 
 interface NavbarProps {
@@ -113,7 +114,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Brand Logo Lockup (Icon + Native Typography) */}
           <a
-            href="/"
+            href="#/home"
             onClick={(e) => {
               e.preventDefault();
               handleLinkClick('home');
@@ -122,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
             aria-label={t.nav.brandTitle}
           >
             <img
-              src="/logo.png"
+              src={getAssetUrl('logo.png')}
               alt="شعار مزرعة بيت الاستنبات - Istenbat Farm"
               className="h-10 md:h-12 w-auto object-contain mix-blend-multiply transition-transform group-hover:scale-105 flex-shrink-0"
             />

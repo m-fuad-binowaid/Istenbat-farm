@@ -4,6 +4,7 @@ import { OFFICIAL_INFO } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
+import { getAssetUrl } from '../utils/assetPath';
 import { Phone, Mail, MapPin, Globe, ArrowUpRight, ShieldCheck, Clock } from 'lucide-react';
 
 interface FooterProps {
@@ -27,7 +28,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Col 1: Official Establishment & Parent Group */}
           <div className="flex flex-col gap-4">
             <a
-              href="/"
+              href="#/home"
               onClick={(e) => {
                 e.preventDefault();
                 handleNav('home');
@@ -37,7 +38,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             >
               <div className="w-12 h-12 rounded-xl bg-[#F9F6F0] p-1.5 flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-105">
                 <img
-                  src="/assets/Untitled design1234_2.jpg"
+                  src={getAssetUrl('assets/Untitled design1234_2.jpg')}
                   alt="شعار استنبات"
                   className="w-full h-full object-contain mix-blend-multiply"
                 />
