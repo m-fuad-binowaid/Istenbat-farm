@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+  <rect width="100%" height="100%" fill="#F5F0E6"/>
+  <circle cx="300" cy="180" r="110" fill="#EAE0D0"/>
+  <!-- Stylized Oyster Mushroom Caps -->
+  <path d="M 230,220 C 210,140 370,130 380,210 C 340,230 260,230 230,220 Z" fill="#D8C8B0"/>
+  <path d="M 200,200 C 180,120 330,110 350,180 C 310,200 240,205 200,200 Z" fill="#E4D8C4"/>
+  <path d="M 260,170 C 250,95 400,90 410,165 C 370,185 290,185 260,170 Z" fill="#C9B89E"/>
+  <path d="M 270,220 C 275,270 290,285 300,290 C 310,285 320,270 325,220 Z" fill="#EFE8DC"/>
+  <path d="M 240,210 C 245,260 255,275 265,280 C 275,275 280,260 285,210 Z" fill="#E8DEC8"/>
+  <text x="300" y="325" font-family="sans-serif" font-size="20" font-weight="bold" fill="#1C3322" text-anchor="middle">فطر المحار العضوي</text>
+  <text x="300" y="350" font-family="sans-serif" font-size="13" font-weight="600" fill="#7C6F56" text-anchor="middle">ORGANIC OYSTER MUSHROOM</text>
+</svg>

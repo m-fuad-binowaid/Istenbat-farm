@@ -1,0 +1,79 @@
+export type Language = 'ar' | 'en';
+
+export type PageRoute = 'home' | 'about' | 'products' | 'experience' | 'contact' | 'admin';
+
+export interface ContactSettings {
+  whatsapp: string;
+  whatsappRaw: string;
+  phone: string;
+  mobile: string;
+  emailInfo: string;
+  locationAr: string;
+  locationEn: string;
+  workingHoursAr: string;
+  workingHoursEn: string;
+  visitHoursAr: string;
+  visitHoursEn: string;
+}
+
+export interface Product {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  category: 'all' | 'dairy' | 'mushrooms-herbs' | 'veggies' | 'honey-poultry';
+  categoryLabelAr: string;
+  categoryLabelEn: string;
+  weightAr: string;
+  weightEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  benefitsAr: string[];
+  benefitsEn: string[];
+  image: string;
+  isCertifiedOrganic: boolean;
+  isAvailable?: boolean;
+  priceAr?: string;
+  priceEn?: string;
+  badgeAr?: string;
+  badgeEn?: string;
+}
+
+export interface BenefitVideo {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  subtitleAr: string;
+  subtitleEn: string;
+  youtubeId: string;
+  durationAr: string;
+  durationEn: string;
+  thumbnail: string;
+  categoryAr: string;
+  categoryEn: string;
+}
+
+export interface TourPackage {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  durationAr: string;
+  durationEn: string;
+  targetAr: string;
+  targetEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  includesAr: string[];
+  includesEn: string[];
+  image: string;
+}
+
+export interface GoogleReview {
+  id: string;
+  author: string;
+  badgeAr: string;
+  badgeEn: string;
+  rating: number;
+  textAr: string;
+  textEn: string;
+}
+

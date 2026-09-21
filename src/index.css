@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --font-tajawal: 'Tajawal', 'Readex Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-readex: 'Readex Pro', 'Tajawal', sans-serif;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+
+  --color-botanical: #1C3322;
+  --color-botanical-dark: #122216;
+  --color-botanical-light: #274730;
+  --color-sand: #F9F6F0;
+  --color-sand-warm: #F4EFE6;
+  --color-charcoal: #2B2821;
+  --color-olive-gold: #786438;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-tajawal);
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F4EFE6;
+}
+::-webkit-scrollbar-thumb {
+  background: #C4B9A8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1C3322;
+}

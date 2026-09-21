@@ -1,0 +1,6 @@
+{
+  "name": "استنبات | ISTENBAT",
+  "description": "المزرعة الحرفية العضوية والسياحة الريفية في الدلم، المملكة العربية السعودية - إنتاج عضوي موثق وتجارب ضيافة ريفية فريدة.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

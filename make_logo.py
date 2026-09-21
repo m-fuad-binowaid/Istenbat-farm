@@ -1,0 +1,37 @@
+import subprocess
+
+svg_content = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">
+  <rect width="1000" height="1000" fill="#FFFFFF"/>
+  <g transform="translate(100, 320)">
+    <!-- Water droplet & Sprout Emblem -->
+    <g transform="translate(0, 0)">
+      <!-- Droplet contour with open organic flow -->
+      <path d="M 125 15 C 100 65 30 180 30 255 C 30 335 95 385 175 385 C 245 385 310 330 310 250 C 310 205 275 130 215 65 L 125 15 Z" 
+            fill="none" stroke="#50452d" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Sprout stem -->
+      <path d="M 165 375 C 165 310 180 260 210 200" 
+            fill="none" stroke="#50452d" stroke-width="15" stroke-linecap="round"/>
+      <!-- Left smaller leaf -->
+      <path d="M 175 295 C 130 295 75 250 70 215 C 95 205 155 220 178 265 Z" 
+            fill="none" stroke="#50452d" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Right larger leaf -->
+      <path d="M 185 245 C 190 170 240 105 285 85 C 295 125 275 200 210 225 Z" 
+            fill="none" stroke="#50452d" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Typography -->
+    <g transform="translate(365, 0)">
+      <text x="0" y="210" font-family="'Tajawal', 'Readex Pro', 'Noto Sans Arabic', 'Segoe UI', sans-serif" font-size="130" font-weight="800" fill="#50452d" letter-spacing="1">استنبات</text>
+      <text x="5" y="325" font-family="'Plus Jakarta Sans', 'Inter', 'Segoe UI', sans-serif" font-size="62" font-weight="700" fill="#50452d" letter-spacing="12">ISTENBAT</text>
+    </g>
+  </g>
+</svg>'''
+
+with open("public/assets/logo.svg", "w") as f:
+    f.write(svg_content)
+
+# Convert to jpeg and png using convert
+subprocess.run(["convert", "-background", "white", "-flatten", "-density", "200", "public/assets/logo.svg", "-quality", "95", "public/assets/Artisanal_brand_logo_design_20260921173215.jpeg"])
+subprocess.run(["convert", "-background", "white", "-flatten", "-density", "200", "public/assets/logo.svg", "public/assets/Artisanal_brand_logo_design_202609211732.png"])
+subprocess.run(["convert", "-background", "white", "-flatten", "-density", "200", "public/assets/logo.svg", "public/assets/Artisanal_brand_logo_design_20260921.png"])
+print("Generated logos successfully!")
