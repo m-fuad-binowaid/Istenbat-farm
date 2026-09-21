@@ -26,12 +26,15 @@ function AppContent() {
       // 1. Check hash first (#/admin, #admin)
       const hash = window.location.hash.replace(/^#\/?/, '').trim();
       
-      // 2. Check path relative to base (e.g. /istenbat-farm/admin -> admin)
+      // 2. Check path relative to base (e.g. /Istenbat-farm/admin -> admin)
       const rawPath = window.location.pathname;
       const base = (import.meta.env.BASE_URL || '/').replace(/^\/|\/$/g, '');
       const pathSegments = rawPath.split('/').filter(Boolean);
-      // Remove the base segment if present
-      if (base && pathSegments.length > 0 && pathSegments[0] === base) {
+      
+      // On GitHub Pages (username.github.io/repo-name/...), the first segment is the repo name
+      if (window.location.hostname.endsWith('github.io') && pathSegments.length > 0) {
+        pathSegments.shift();
+      } else if (base && pathSegments.length > 0 && pathSegments[0].toLowerCase() === base.toLowerCase()) {
         pathSegments.shift();
       }
       const directPath = pathSegments.join('/');

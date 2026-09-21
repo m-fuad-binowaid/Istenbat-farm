@@ -12,13 +12,21 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('istenbat_lang') as Language;
-    return saved === 'en' ? 'en' : 'ar';
+    try {
+      const saved = localStorage.getItem('istenbat_lang') as Language;
+      return saved === 'en' ? 'en' : 'ar';
+    } catch {
+      return 'ar';
+    }
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('istenbat_lang', lang);
+    try {
+      localStorage.setItem('istenbat_lang', lang);
+    } catch (e) {
+      console.warn('Unable to persist language in localStorage', e);
+    }
   };
 
   const toggleLanguage = () => {
