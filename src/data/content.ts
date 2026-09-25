@@ -1,4 +1,11 @@
-import { Product, BenefitVideo, GoogleReview } from '../types';
+import { Product, BenefitVideo, GoogleReview, CategoryItem, ActivityCard } from '../types';
+
+export const INITIAL_CATEGORIES: CategoryItem[] = [
+  { id: 'veggies', nameAr: 'خضار وورقيات', nameEn: 'Fresh Vegetables & Greens', icon: 'Carrot' },
+  { id: 'dairy', nameAr: 'ألبان وأجبان ريفية', nameEn: 'Farm Dairy & Cheeses', icon: 'Milk' },
+  { id: 'honey-poultry', nameAr: 'عسل ودواجن وبيض', nameEn: 'Honey, Poultry & Eggs', icon: 'Egg' },
+  { id: 'mushrooms-herbs', nameAr: 'فطريات وأعشاب واستنبات', nameEn: 'Sprouts, Mushrooms & Herbs', icon: 'Sprout' },
+];
 
 export const OFFICIAL_INFO = {
   nameAr: 'مؤسسة بيت الاستنبات للزراعة',
@@ -14,7 +21,7 @@ export const OFFICIAL_INFO = {
   addressEn: 'King Abdullah Rd, Ad Dilam 16312, Saudi Arabia',
   cityAr: 'الدلم 16312، محافظة الخرج، المملكة العربية السعودية',
   cityEn: 'Ad Dilam 16312, Al Kharj Governorate, Saudi Arabia',
-  phone: '0114660423',
+  phone: '0501207704',
   mobile: '0501207704',
   whatsapp: '+966501207704',
   whatsappRaw: '966501207704',
@@ -470,7 +477,7 @@ export const HEALTH_VIDEOS: BenefitVideo[] = [
   },
 ];
 
-export const AGRITOURISM_ACTIVITIES = [
+export const INITIAL_ACTIVITIES: ActivityCard[] = [
   {
     id: 'harvest',
     titleAr: 'قطف الفواكه والخضروات العضوية الطازجة',
@@ -481,7 +488,8 @@ export const AGRITOURISM_ACTIVITIES = [
       'استمتع بمتعة وتجربة قطف الفواكه والخضروات العضوية الطازجة بنفسك من الحقل مباشرة قبل دفع قيمتها.',
     descriptionEn:
       'Experience the thrill of picking vine-fresh organic vegetables and seasonal fruits directly in the open fields before checkout.',
-    image: '/assets/fruitsvegies10.jpg',
+    mediaType: 'image',
+    mediaUrl: '/assets/fruitsvegies10.jpg',
     detailsAr: [
       'قطف مباشر من البيوت المحمية والحقول المفتوحة',
       'سلة قطف شخصية وتذوق للمحاصيل الطازجة',
@@ -503,7 +511,8 @@ export const AGRITOURISM_ACTIVITIES = [
       'استكشف جمال نباتاتنا وزهورنا وأشجارنا. عش تجربة الاقتراب من النحل وخلاياه، واستمتع بصيد الأسماك والتواصل مع حيوانات المزرعة.',
     descriptionEn:
       'Explore blooming gardens, experience beekeeping beside hive shelters, try recreational pond fishing, and feed farm animals safely.',
-    image: '/assets/visitor03.jpg',
+    mediaType: 'image',
+    mediaUrl: '/assets/visitor03.jpg',
     detailsAr: [
       'الاقتراب الآمن من خلايا النحل ومناحل العسل',
       'تجربة صيد الأسماك في بحيرة الاستزراع السمكي',
@@ -516,28 +525,6 @@ export const AGRITOURISM_ACTIVITIES = [
     ],
   },
   {
-    id: 'camp-events',
-    titleAr: 'المخيم ومناسباتكم الخاصة',
-    titleEn: 'Campsite & Private Events',
-    tagAr: 'استجمام وأجواء طبيعية هادئة',
-    tagEn: 'Serene Nature & Starlit Nights',
-    descriptionAr:
-      'نوفر لكم مساحات تخييم مجهزة بالكامل؛ أقيموا فعالياتكم ومناسباتكم الخاصة هنا للاسترخاء والاستجمام والتمتع بجمال الطبيعة.',
-    descriptionEn:
-      'Fully equipped scenic desert-edge camp spots where you can host family gatherings, retreats, and evening bonfires.',
-    image: '/assets/visitor11.jpg',
-    detailsAr: [
-      'مواقع تخييم مجهزة ونُزل إقامة ريفية مريحة',
-      'مسارات لركوب الدراجات وألعاب وأنشطة خارجية',
-      'جلسات ضيافة نجدية وقهوة وشاي على الحطب',
-    ],
-    detailsEn: [
-      'Equipped camping pitches and peaceful farmhouse lodging',
-      'Cycling tracks and open outdoor spaces',
-      'Traditional Saudi hospitality with firewood tea and coffee',
-    ],
-  },
-  {
     id: 'family-activities',
     titleAr: 'أنشطة الأفراد، العائلات والمجموعات',
     titleEn: 'Activities for Individuals, Families & Groups',
@@ -547,7 +534,8 @@ export const AGRITOURISM_ACTIVITIES = [
       'سواء كنت فرداً، عائلة، أو مجموعة أصدقاء أو رحلات مدرسية منظمة؛ نصنع لك تجربة ريفية متكاملة تناسب وقتك وتطلعاتك.',
     descriptionEn:
       'From weekend getaways to full-day educational school visits and group bonding outings, we curate your ideal farm itinerary.',
-    image: '/assets/visitor06.jpg',
+    mediaType: 'image',
+    mediaUrl: '/assets/visitor06.jpg',
     detailsAr: [
       'برامج قضاء عطلة نهاية الأسبوع المنعشة',
       'برامج اليوم الكامل بالهواء الطلق مع وجبات طازجة',
@@ -559,7 +547,35 @@ export const AGRITOURISM_ACTIVITIES = [
       'Extended countryside stays at Istenbat Farmhouse',
     ],
   },
+  {
+    id: 'camp-events',
+    titleAr: 'استجمام وأجواء طبيعية هادئة / فعاليات خاصة',
+    titleEn: 'Campsite, Tranquil Nature & Private Events',
+    tagAr: 'استجمام وأجواء طبيعية هادئة',
+    tagEn: 'Serene Nature & Starlit Nights',
+    descriptionAr:
+      'نوفر لكم مساحات تخييم مجهزة بالكامل؛ أقيموا فعالياتكم ومناسباتكم الخاصة هنا للاسترخاء والاستجمام والتمتع بجمال الطبيعة.',
+    descriptionEn:
+      'Fully equipped scenic desert-edge camp spots where you can host family gatherings, retreats, and evening bonfires.',
+    mediaType: 'image',
+    mediaUrl: '/assets/visitor11.jpg',
+    detailsAr: [
+      'مواقع تخييم مجهزة ونُزل إقامة ريفية مريحة',
+      'مسارات لركوب الدراجات وألعاب وأنشطة خارجية',
+      'جلسات ضيافة نجدية وقهوة وشاي على الحطب',
+    ],
+    detailsEn: [
+      'Equipped camping pitches and peaceful farmhouse lodging',
+      'Cycling tracks and open outdoor spaces',
+      'Traditional Saudi hospitality with firewood tea and coffee',
+    ],
+  },
 ];
+
+export const AGRITOURISM_ACTIVITIES = INITIAL_ACTIVITIES.map((act) => ({
+  ...act,
+  image: act.mediaUrl,
+}));
 
 export function buildWhatsAppLink(message: string): string {
   const encoded = encodeURIComponent(message);

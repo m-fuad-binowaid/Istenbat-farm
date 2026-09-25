@@ -130,15 +130,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-emerald-400 shrink-0" />
-                <div className="flex flex-wrap items-center gap-2">
-                  <a href={`tel:${contactInfo.phone}`} dir="ltr" className="hover:text-white font-medium">
-                    {contactInfo.phone}
-                  </a>
-                  <span className="text-[#8C9E91]">•</span>
-                  <a href={`tel:${contactInfo.mobile}`} dir="ltr" className="hover:text-white font-medium">
-                    {contactInfo.mobile}
-                  </a>
-                </div>
+                <a href="tel:+966501207704" dir="ltr" className="hover:text-white font-medium">
+                  {contactInfo.mobile || contactInfo.phone || '0501207704'}
+                </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-emerald-400 shrink-0" />

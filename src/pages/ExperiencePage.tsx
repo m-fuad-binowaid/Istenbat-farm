@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { PageRoute } from '../types';
-import { AGRITOURISM_ACTIVITIES } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
 import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
+import { ActivityCardItem } from '../components/ActivityCardItem';
 import { ImageWithFallback } from '../components/ImageWithFallback';
 import {
   Calendar,
   Sparkles,
-  CheckCircle2,
   MessageSquare,
 } from 'lucide-react';
 
@@ -18,7 +17,7 @@ interface ExperiencePageProps {
 
 export const ExperiencePage: React.FC<ExperiencePageProps> = () => {
   const { language } = useLanguage();
-  const { buildWhatsAppUrl } = useFarmData();
+  const { buildWhatsAppUrl, activities } = useFarmData();
   const t = TRANSLATIONS[language];
 
   // Visit Inquiry Form State
@@ -97,61 +96,18 @@ Please provide me with visit details and arrangements. Thank you!`;
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {AGRITOURISM_ACTIVITIES.map((act) => {
-              const actTitle = language === 'ar' ? act.titleAr : act.titleEn;
-              const actTag = language === 'ar' ? act.tagAr : act.tagEn;
-              const actDesc = language === 'ar' ? act.descriptionAr : act.descriptionEn;
-              const actDetails = language === 'ar' ? act.detailsAr : act.detailsEn;
-
-              return (
-                <div
-                  key={act.id}
-                  className="bg-white rounded-3xl overflow-hidden border border-[#E7DECD] shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="relative aspect-16/10 bg-[#F4EFE6] overflow-hidden">
-                      <ImageWithFallback
-                        src={act.image}
-                        alt={actTitle}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute top-3 end-3 px-3 py-1 rounded-full bg-[#1C3322] text-[#F9F6F0] text-xs font-bold shadow-xs">
-                        {actTag}
-                      </div>
-                    </div>
-
-                    <div className="p-6 text-start space-y-3">
-                      <h3 className="text-xl font-black text-[#1C3322]">{actTitle}</h3>
-                      <p className="text-xs sm:text-sm text-[#50452d] leading-relaxed">
-                        {actDesc}
-                      </p>
-
-                      <ul className="space-y-2 pt-3 border-t border-[#F4EFE6]">
-                        {actDetails.map((detail, idx) => (
-                          <li key={idx} className="flex items-center gap-2 text-xs sm:text-sm text-[#50452d]">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                            <span>{detail}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="p-6 pt-0">
-                    <button
-                      onClick={() => {
-                        const bookingEl = document.getElementById('booking-section');
-                        if (bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="w-full py-3 bg-[#F4EFE6] hover:bg-[#1C3322] hover:text-white text-[#1C3322] text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>{t.experience.inquireCardBtn}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+            {activities.map((act) => (
+              <ActivityCardItem
+                key={act.id}
+                activity={act}
+                language={language}
+                inquireButtonText={t.experience.inquireCardBtn}
+                onInquire={() => {
+                  const bookingEl = document.getElementById('booking-section');
+                  if (bookingEl) bookingEl.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+            ))}
           </div>
         </div>
       </section>

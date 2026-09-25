@@ -108,27 +108,20 @@ New inquiry from Istenbat House Farm official website:
                     </div>
                     <div>
                       <strong className="block text-[#1C3322] font-bold mb-0.5">{t.contact.labelPhone}</strong>
-                      <a href={`tel:${contactInfo.phone}`} dir="ltr" className="text-emerald-800 font-bold hover:underline">
-                        {contactInfo.phone}
-                      </a>
-                    </div>
-                  </li>
-
-                  <li className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
-                      <MessageCircle className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <strong className="block text-[#1C3322] font-bold mb-0.5">{t.contact.labelMobile}</strong>
-                      <a
-                        href={`https://wa.me/${contactInfo.whatsappRaw || '966501207704'}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        dir="ltr"
-                        className="text-emerald-800 font-bold hover:underline"
-                      >
-                        {contactInfo.whatsapp || contactInfo.mobile}
-                      </a>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <a href="tel:+966501207704" dir="ltr" className="text-emerald-800 font-bold hover:underline">
+                          {contactInfo.mobile || '0501207704'}
+                        </a>
+                        <a
+                          href={`https://wa.me/${contactInfo.whatsappRaw || '966501207704'}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-md transition-colors"
+                        >
+                          <MessageCircle className="w-3 h-3" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
                     </div>
                   </li>
 
@@ -139,8 +132,11 @@ New inquiry from Istenbat House Farm official website:
                     <div>
                       <strong className="block text-[#1C3322] font-bold mb-0.5">{t.contact.labelEmail}</strong>
                       <div className="flex flex-col gap-0.5">
-                        <a href={`mailto:${contactInfo.emailInfo}`} className="text-emerald-800 hover:underline">
+                        <a href={`mailto:${contactInfo.emailInfo}`} className="text-emerald-800 font-medium hover:underline">
                           {contactInfo.emailInfo}
+                        </a>
+                        <a href={`mailto:${OFFICIAL_INFO.emailCare}`} className="text-emerald-800/80 hover:underline text-xs">
+                          {OFFICIAL_INFO.emailCare}
                         </a>
                       </div>
                     </div>

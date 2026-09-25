@@ -16,11 +16,20 @@ export interface ContactSettings {
   visitHoursEn: string;
 }
 
+export interface CategoryItem {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  icon?: string;
+  badgeAr?: string;
+  badgeEn?: string;
+}
+
 export interface Product {
   id: string;
   nameAr: string;
   nameEn: string;
-  category: 'all' | 'dairy' | 'mushrooms-herbs' | 'veggies' | 'honey-poultry';
+  category: string;
   categoryLabelAr: string;
   categoryLabelEn: string;
   weightAr: string;
@@ -36,6 +45,20 @@ export interface Product {
   priceEn?: string;
   badgeAr?: string;
   badgeEn?: string;
+}
+
+export interface ActivityCard {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  tagAr: string;
+  tagEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  detailsAr: string[];
+  detailsEn: string[];
+  mediaType: 'image' | 'video';
+  mediaUrl: string;
 }
 
 export interface BenefitVideo {

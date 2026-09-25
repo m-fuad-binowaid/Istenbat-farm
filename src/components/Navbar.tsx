@@ -84,11 +84,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
           </div>
           <div className="flex items-center gap-4">
             <a
-              href={`tel:${contactInfo.phone}`}
+              href="tel:+966501207704"
               className="hover:text-white flex items-center gap-1.5 transition-colors"
             >
               <Phone className="w-3.5 h-3.5 text-emerald-400" />
-              <span dir="ltr">{contactInfo.phone}</span>
+              <span dir="ltr">{contactInfo.mobile || contactInfo.phone || '0501207704'}</span>
             </a>
             <span className="text-[#8C9E91]">|</span>
             <a
@@ -248,11 +248,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
               <div className="flex items-center justify-between">
                 <span>{t.nav.topBarLocation}</span>
                 <a
-                  href={`tel:${OFFICIAL_INFO.phone}`}
+                  href="tel:+966501207704"
                   dir="ltr"
                   className="font-bold text-[#1C3322]"
                 >
-                  {OFFICIAL_INFO.phone}
+                  {contactInfo.mobile || contactInfo.phone || '0501207704'}
                 </a>
               </div>
               <div className="text-xs text-[#8C7A5B]">

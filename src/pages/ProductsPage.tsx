@@ -25,16 +25,18 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activeVideoModal, setActiveVideoModal] = useState<{ id: string; title: string } | null>(null);
   const { language } = useLanguage();
-  const { products, buildWhatsAppUrl } = useFarmData();
+  const { products, categories: dynamicCategories, buildWhatsAppUrl } = useFarmData();
   const t = TRANSLATIONS[language];
 
-  const categories = [
-    { id: 'all', label: t.products.categories.all },
-    { id: 'veggies', label: t.products.categories.veggies },
-    { id: 'mushrooms-herbs', label: t.products.categories.mushrooms },
-    { id: 'honey-poultry', label: t.products.categories.honey },
-    { id: 'dairy', label: t.products.categories.dairy },
-  ];
+  const categoryTabs = useMemo(() => {
+    return [
+      { id: 'all', label: language === 'ar' ? 'الكل' : 'All' },
+      ...dynamicCategories.map((cat) => ({
+        id: cat.id,
+        label: language === 'ar' ? cat.nameAr : cat.nameEn,
+      })),
+    ];
+  }, [dynamicCategories, language]);
 
   // Only display available products or show stock status
   const filteredProducts = useMemo(() => {
@@ -76,15 +78,15 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {categories.map((cat) => {
+              {categoryTabs.map((cat) => {
                 const isActive = selectedCategory === cat.id;
                 return (
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all ${
+                    className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs'
+                        ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs ring-2 ring-emerald-600/30'
                         : 'bg-white text-[#2B2821] hover:bg-[#EAE2D2] border border-[#E7DECD]'
                     }`}
                   >
@@ -100,7 +102,11 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
             {filteredProducts.map((product: Product) => {
               const productName = language === 'ar' ? product.nameAr : product.nameEn;
               const productDesc = language === 'ar' ? product.descriptionAr : product.descriptionEn;
-              const productCatLabel = language === 'ar' ? product.categoryLabelAr : product.categoryLabelEn;
+              const matchedCat = dynamicCategories.find((c) => c.id === product.category);
+              const productCatLabel =
+                (language === 'ar' ? matchedCat?.nameAr : matchedCat?.nameEn) ||
+                (language === 'ar' ? product.categoryLabelAr : product.categoryLabelEn) ||
+                product.category;
               const productWeight = language === 'ar' ? product.weightAr : product.weightEn;
               const productBadge = language === 'ar' ? product.badgeAr : product.badgeEn;
               const productBenefits = language === 'ar' ? product.benefitsAr : product.benefitsEn;
