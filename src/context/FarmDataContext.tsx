@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Product, ContactSettings, CategoryItem, ActivityCard } from '../types';
-import { OFFICIAL_INFO, PRODUCTS_CATALOG, INITIAL_CATEGORIES, INITIAL_ACTIVITIES } from '../data/content';
+import { Product, ContactSettings, CategoryItem, ActivityCard, StoreLocation } from '../types';
+import {
+  OFFICIAL_INFO,
+  PRODUCTS_CATALOG,
+  INITIAL_CATEGORIES,
+  INITIAL_ACTIVITIES,
+  INITIAL_LOCATIONS,
+} from '../data/content';
 
 export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
   whatsapp: '+966501207704',
@@ -27,6 +33,7 @@ interface FarmDataContextType {
   products: Product[];
   categories: CategoryItem[];
   activities: ActivityCard[];
+  locations: StoreLocation[];
   updateContactInfo: (newInfo: Partial<ContactSettings>) => void;
   resetContactInfo: () => void;
   addProduct: (product: Omit<Product, 'id'> & { id?: string }) => void;
@@ -42,6 +49,11 @@ interface FarmDataContextType {
   addActivity: (activity: Omit<ActivityCard, 'id'> & { id?: string }) => ActivityCard;
   deleteActivity: (id: string) => void;
   resetActivities: () => void;
+  addLocation: (location: Omit<StoreLocation, 'id'> & { id?: string }) => StoreLocation;
+  updateLocation: (id: string, updated: Partial<StoreLocation>) => void;
+  deleteLocation: (id: string) => void;
+  toggleLocationStatus: (id: string) => void;
+  resetLocations: () => void;
   resetAllToDefaults: () => void;
   buildWhatsAppUrl: (message: string) => string;
 }
@@ -52,6 +64,7 @@ const STORAGE_KEY_CONTACT = 'istenbat_farm_contact_v1';
 const STORAGE_KEY_PRODUCTS = 'istenbat_farm_products_v1';
 const STORAGE_KEY_CATEGORIES = 'istenbat_farm_categories_v1';
 const STORAGE_KEY_ACTIVITIES = 'istenbat_farm_activities_v1';
+const STORAGE_KEY_LOCATIONS = 'istenbat_farm_locations_v1';
 
 export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load Contact Info from localStorage or fallback
@@ -103,6 +116,22 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return INITIAL_ACTIVITIES;
   });
 
+  // Load Store Locations from localStorage or fallback
+  const [locations, setLocations] = useState<StoreLocation[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_LOCATIONS);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading store locations from localStorage', e);
+    }
+    return INITIAL_LOCATIONS;
+  });
+
   // Load Products from localStorage or fallback
   const [products, setProducts] = useState<Product[]>(() => {
     try {
@@ -145,6 +174,15 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       console.error('Failed to save activities to localStorage', e);
     }
   }, [activities]);
+
+  // Automatically save store locations to localStorage on change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
+    } catch (e) {
+      console.error('Failed to save store locations to localStorage', e);
+    }
+  }, [locations]);
 
   // Automatically save products to localStorage on change
   useEffect(() => {
@@ -276,16 +314,52 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setActivities(INITIAL_ACTIVITIES);
   };
 
+  const addLocation = (locationData: Omit<StoreLocation, 'id'> & { id?: string }): StoreLocation => {
+    const rawId = locationData.id || `loc-${Date.now()}`;
+    const cleanId = rawId.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    const newLocation: StoreLocation = {
+      ...locationData,
+      id: cleanId,
+      isActive: locationData.isActive !== undefined ? locationData.isActive : true,
+    };
+    setLocations((prev) => [...prev, newLocation]);
+    return newLocation;
+  };
+
+  const updateLocation = (id: string, updated: Partial<StoreLocation>) => {
+    setLocations((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updated } : item))
+    );
+  };
+
+  const deleteLocation = (id: string) => {
+    setLocations((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const toggleLocationStatus = (id: string) => {
+    setLocations((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, isActive: !item.isActive } : item
+      )
+    );
+  };
+
+  const resetLocations = () => {
+    setLocations(INITIAL_LOCATIONS);
+  };
+
   const resetAllToDefaults = () => {
     setContactInfo(DEFAULT_CONTACT_SETTINGS);
     setProducts(INITIAL_PRODUCTS);
     setCategories(INITIAL_CATEGORIES);
     setActivities(INITIAL_ACTIVITIES);
+    setLocations(INITIAL_LOCATIONS);
     try {
       localStorage.removeItem(STORAGE_KEY_CONTACT);
       localStorage.removeItem(STORAGE_KEY_PRODUCTS);
       localStorage.removeItem(STORAGE_KEY_CATEGORIES);
       localStorage.removeItem(STORAGE_KEY_ACTIVITIES);
+      localStorage.removeItem(STORAGE_KEY_LOCATIONS);
     } catch (e) {
       console.error(e);
     }
@@ -303,6 +377,7 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         products,
         categories,
         activities,
+        locations,
         updateContactInfo,
         resetContactInfo,
         addProduct,
@@ -318,6 +393,11 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addActivity,
         deleteActivity,
         resetActivities,
+        addLocation,
+        updateLocation,
+        deleteLocation,
+        toggleLocationStatus,
+        resetLocations,
         resetAllToDefaults,
         buildWhatsAppUrl,
       }}

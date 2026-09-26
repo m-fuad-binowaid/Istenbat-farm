@@ -31,6 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
     { id: 'home', label: t.nav.home },
     { id: 'about', label: t.nav.about },
     { id: 'products', label: t.nav.products },
+    { id: 'locations', label: t.nav.locations },
     { id: 'experience', label: t.nav.experience },
     { id: 'contact', label: t.nav.contact },
   ];

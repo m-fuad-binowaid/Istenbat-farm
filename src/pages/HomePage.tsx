@@ -28,6 +28,11 @@ import {
   Quote,
   Star,
   HeartHandshake,
+  Store,
+  MapPin,
+  Navigation,
+  ArrowUpRight,
+  Building2,
 } from 'lucide-react';
 
 interface HomePageProps {
@@ -60,8 +65,23 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [heroParallaxY, setHeroParallaxY] = useState(0);
   const { language, isRTL } = useLanguage();
-  const { contactInfo, buildWhatsAppUrl } = useFarmData();
+  const { contactInfo, buildWhatsAppUrl, locations } = useFarmData();
+  const [selectedHomeCity, setSelectedHomeCity] = useState<string>('all');
   const t = TRANSLATIONS[language];
+
+  const activeLocations = locations.filter((loc) => loc.isActive !== false);
+  const homeCities = Array.from(
+    new Set(
+      activeLocations.map((l) => (language === 'ar' ? l.city : l.cityEn || l.city)).filter(Boolean)
+    )
+  );
+  const displayedLocations = activeLocations
+    .filter((loc) => {
+      if (selectedHomeCity === 'all') return true;
+      const cityVal = language === 'ar' ? loc.city : loc.cityEn || loc.city;
+      return cityVal === selectedHomeCity;
+    })
+    .slice(0, 4);
 
   // Subtle 60fps hardware-accelerated parallax on window scroll
   useEffect(() => {
@@ -359,6 +379,131 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               className="font-bold text-[#1C3322] hover:underline shrink-0"
             >
               {t.home.readStoryBtn}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 4.5. WHERE TO FIND OUR PRODUCTS (أين تجد منتجاتنا؟) */}
+      <section className="py-16 bg-[#F4EFE6] border-y border-[#E7DECD]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 text-start">
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-bold tracking-wide mb-3">
+                <Store className="w-3.5 h-3.5 text-emerald-700" />
+                <span>{language === 'ar' ? 'منافذ البيع والتوزيع المعتمدة' : 'Official Retail Stores'}</span>
+              </span>
+              <h2
+                className={`text-2xl sm:text-4xl font-black text-[#1C3322] ${
+                  language === 'ar' ? 'font-tajawal' : 'font-sans'
+                }`}
+              >
+                {language === 'ar' ? 'أين تجد منتجاتنا؟' : 'Where to Find Our Products'}
+              </h2>
+              <p className="text-xs sm:text-sm text-[#50452d] mt-2 max-w-xl leading-relaxed">
+                {language === 'ar'
+                  ? 'محاصيل ومنتجات بيت الاستنبات متوفرة يومياً في فروع كبرى سلاسل السوبرماركت ومتاجر الأغذية العضوية بالمملكة.'
+                  : 'Our daily harvest is stocked across major supermarket chains and organic retailers across Saudi Arabia.'}
+              </p>
+            </div>
+
+            {/* City Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedHomeCity('all')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  selectedHomeCity === 'all'
+                    ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs'
+                    : 'bg-white text-[#50452d] hover:bg-[#EAE2D2] border border-[#E7DECD]'
+                }`}
+              >
+                {language === 'ar' ? 'كل المدن' : 'All Cities'}
+              </button>
+              {homeCities.map((city) => (
+                <button
+                  key={city}
+                  type="button"
+                  onClick={() => setSelectedHomeCity(city)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    selectedHomeCity === city
+                      ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs'
+                      : 'bg-white text-[#50452d] hover:bg-[#EAE2D2] border border-[#E7DECD]'
+                  }`}
+                >
+                  {city}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {displayedLocations.map((branch) => {
+              const storeTitle = language === 'ar' ? branch.storeName : (branch.storeNameEn || branch.storeName);
+              const branchTitle = language === 'ar' ? branch.branchName : (branch.branchNameEn || branch.branchName);
+              const cityName = language === 'ar' ? branch.city : (branch.cityEn || branch.city);
+
+              return (
+                <div
+                  key={branch.id}
+                  className="bg-white rounded-3xl p-5 border border-[#E7DECD] shadow-xs hover:shadow-lg transition-all duration-300 flex flex-col justify-between group text-start relative overflow-hidden"
+                >
+                  <div>
+                    {/* Top Row (Badges): Store Name Pill (Right) & City Badge (Left) */}
+                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                      <span className="text-[11px] font-bold text-[#1C3322] bg-emerald-50/90 px-3 py-0.5 rounded-full border border-emerald-200/90 shadow-2xs">
+                        {storeTitle}
+                      </span>
+                      <span className="text-[11px] font-bold text-[#50452d] bg-[#F4EFE6] px-2.5 py-0.5 rounded-full border border-[#E7DECD] flex items-center gap-1 shadow-2xs">
+                        <MapPin className="w-3 h-3 text-emerald-700" />
+                        <span>{cityName}</span>
+                      </span>
+                    </div>
+
+                    {/* Branch Title (Full Width) */}
+                    <h3 className="text-base font-black text-[#1C3322] leading-snug mb-3 line-clamp-2 group-hover:text-emerald-800 transition-colors">
+                      {branchTitle}
+                    </h3>
+
+                    {branch.notesAr && (
+                      <p className="text-[11px] text-gray-600 line-clamp-2 mb-4 leading-relaxed bg-[#F9F6F0] p-2.5 rounded-xl border border-[#E7DECD]">
+                        {language === 'ar' ? branch.notesAr : (branch.notesEn || branch.notesAr)}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="pt-3 border-t border-[#F0EAE1]">
+                    <a
+                      href={branch.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-3 rounded-xl bg-[#1C3322] hover:bg-emerald-800 text-white font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer group-hover:shadow-md"
+                      title={language === 'ar' ? 'فتح في خرائط جوجل' : 'Open in Google Maps'}
+                    >
+                      <Navigation className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400 group-hover:rotate-45 transition-transform" />
+                      <span>{language === 'ar' ? 'فتح في خرائط جوجل 📍' : 'Open in Google Maps 📍'}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 text-emerald-300 opacity-80" />
+                    </a>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Footer Callout to Full Locator Page */}
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              onClick={() => onNavigate('locations')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-[#F9F6F0] text-[#1C3322] font-black text-xs sm:text-sm border border-[#E7DECD] shadow-xs hover:shadow-md transition-all cursor-pointer"
+            >
+              <Store className="w-4 h-4 text-emerald-700" />
+              <span>
+                {language === 'ar'
+                  ? `استكشف جميع منافذ البيع والفروع (${activeLocations.length} فرع) 📍`
+                  : `Browse all store locations (${activeLocations.length} branches) 📍`}
+              </span>
             </button>
           </div>
         </div>

@@ -1,6 +1,21 @@
 export type Language = 'ar' | 'en';
 
-export type PageRoute = 'home' | 'about' | 'products' | 'experience' | 'contact' | 'admin';
+export type PageRoute = 'home' | 'about' | 'products' | 'locations' | 'experience' | 'contact' | 'admin';
+
+export interface StoreLocation {
+  id: string;
+  storeName: string;
+  storeNameEn?: string;
+  branchName: string;
+  branchNameEn?: string;
+  city: string;
+  cityEn?: string;
+  mapsUrl: string;
+  logoUrl: string;
+  isActive: boolean;
+  notesAr?: string;
+  notesEn?: string;
+}
 
 export interface ContactSettings {
   whatsapp: string;

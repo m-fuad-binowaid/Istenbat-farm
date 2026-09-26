@@ -1,4 +1,4 @@
-import { Product, BenefitVideo, GoogleReview, CategoryItem, ActivityCard } from '../types';
+import { Product, BenefitVideo, GoogleReview, CategoryItem, ActivityCard, StoreLocation } from '../types';
 
 export const INITIAL_CATEGORIES: CategoryItem[] = [
   { id: 'veggies', nameAr: 'خضار وورقيات', nameEn: 'Fresh Vegetables & Greens', icon: 'Carrot' },
@@ -581,3 +581,63 @@ export function buildWhatsAppLink(message: string): string {
   const encoded = encodeURIComponent(message);
   return `https://wa.me/${OFFICIAL_INFO.whatsappRaw}?text=${encoded}`;
 }
+
+export const INITIAL_LOCATIONS: StoreLocation[] = [
+  {
+    id: 'loc-tamimi-yasmin',
+    storeName: 'أسواق التميمي',
+    storeNameEn: 'Tamimi Markets',
+    branchName: 'فرع طريق الملك عبد العزيز - حي الياسمين',
+    branchNameEn: 'King Abdulaziz Rd - Al Yasmin District',
+    city: 'الرياض',
+    cityEn: 'Riyadh',
+    mapsUrl: 'https://maps.app.goo.gl/9P7vD3jW5m6E6C5d8',
+    logoUrl: 'preset:tamimi',
+    isActive: true,
+    notesAr: 'قسم الخضار والفواكه العضوية والمنتجات الريفية الطازجة',
+    notesEn: 'Fresh Organic Produce & Farm Harvest Section',
+  },
+  {
+    id: 'loc-spinneys-riyadh',
+    storeName: 'سبينس',
+    storeNameEn: 'Spinneys',
+    branchName: 'فرع طريق التخصصي - المزرعة والمنتجات العضوية',
+    branchNameEn: 'Al Takhassusi St - Organic & Farm Harvest',
+    city: 'الرياض',
+    cityEn: 'Riyadh',
+    mapsUrl: 'https://maps.app.goo.gl/qX8sW2u7T8Y9K1m4A',
+    logoUrl: 'preset:spinneys',
+    isActive: true,
+    notesAr: 'ركن منتجات مزرعة بيت الاستنبات المعتمدة',
+    notesEn: 'Certified Istenbat Farmstead Harvest Stand',
+  },
+  {
+    id: 'loc-danube-nakheel',
+    storeName: 'أسواق الدانوب',
+    storeNameEn: 'Danube Markets',
+    branchName: 'فرع النخيل مول - مخرج 9 طريق الإمام سعود',
+    branchNameEn: 'Al Nakheel Mall - Exit 9 Imam Saud Rd',
+    city: 'الرياض',
+    cityEn: 'Riyadh',
+    mapsUrl: 'https://maps.app.goo.gl/8X7dY3u2W1z9P6m4B',
+    logoUrl: 'preset:danube',
+    isActive: true,
+    notesAr: 'قسم الأغذية الصحية والطبيعية والبيض البلدي',
+    notesEn: 'Organic Health Food & Farm Fresh Eggs',
+  },
+  {
+    id: 'loc-tamimi-kharj',
+    storeName: 'أسواق التميمي',
+    storeNameEn: 'Tamimi Markets',
+    branchName: 'فرع طريق الملك عبد الله - الخرج',
+    branchNameEn: 'King Abdullah Rd - Al Kharj Branch',
+    city: 'الخرج',
+    cityEn: 'Al Kharj',
+    mapsUrl: 'https://maps.app.goo.gl/5M7vD8kL3w2P9R1s7',
+    logoUrl: 'preset:tamimi',
+    isActive: true,
+    notesAr: 'توريد مباشر يومي من مزارعنا بالدلم',
+    notesEn: 'Direct Daily Supply from Ad Dilam Farm',
+  },
+];
+

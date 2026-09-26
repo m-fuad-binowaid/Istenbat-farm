@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { PageRoute, Product, CategoryItem, ActivityCard } from '../types';
+import { PageRoute, Product, CategoryItem, ActivityCard, StoreLocation } from '../types';
 import { useFarmData } from '../context/FarmDataContext';
 import { getAssetUrl } from '../utils/assetPath';
 import { processImageUpload, processMediaUpload } from '../utils/imageUpload';
+import { RETAIL_PRESETS, getRetailPreset } from '../utils/retailLogos';
 import {
   Lock,
   KeyRound,
@@ -33,6 +34,12 @@ import {
   Compass,
   AlertTriangle,
   Link as LinkIcon,
+  Store,
+  MapPin,
+  Navigation,
+  Building2,
+  ExternalLink,
+  ArrowUpRight,
 } from 'lucide-react';
 
 const PRESET_FARM_ASSETS = [
@@ -71,6 +78,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     products,
     categories,
     activities,
+    locations,
     updateContactInfo,
     resetContactInfo,
     addProduct,
@@ -85,6 +93,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     addActivity,
     deleteActivity,
     resetActivities,
+    addLocation,
+    updateLocation,
+    deleteLocation,
+    toggleLocationStatus,
+    resetLocations,
     resetAllToDefaults,
   } = useFarmData();
 
@@ -96,7 +109,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [pinError, setPinError] = useState<string>('');
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'activities' | 'contact'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'activities' | 'locations' | 'contact'>('products');
 
   // Search & Filter in Products
   const [productSearch, setProductSearch] = useState('');
@@ -158,10 +171,29 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
   const [activityMediaSourceTab, setActivityMediaSourceTab] = useState<'upload' | 'preset' | 'url'>('upload');
   const [isDraggingActivityMedia, setIsDraggingActivityMedia] = useState(false);
 
+  // Dedicated Store Locations Management State
+  const [locationModalMode, setLocationModalMode] = useState<'add' | 'edit' | null>(null);
+  const [editingLocationId, setEditingLocationId] = useState<string | null>(null);
+  const [locationForm, setLocationForm] = useState({
+    storeName: 'أسواق التميمي',
+    storeNameEn: 'Tamimi Markets',
+    branchName: '',
+    branchNameEn: '',
+    city: 'الرياض',
+    cityEn: 'Riyadh',
+    mapsUrl: '',
+    isActive: true,
+    notesAr: 'قسم الخضار والفواكه العضوية والمنتجات الريفية الطازجة',
+    notesEn: 'Fresh Organic Produce & Farm Harvest Section',
+  });
+  const [locationSearch, setLocationSearch] = useState('');
+  const [locationCityFilter, setLocationCityFilter] = useState('all');
+
   // Delete Confirmation States
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<CategoryItem | null>(null);
   const [activityToDelete, setActivityToDelete] = useState<ActivityCard | null>(null);
+  const [locationToDelete, setLocationToDelete] = useState<StoreLocation | null>(null);
 
   // Contact Form State
   const [contactForm, setContactForm] = useState(contactInfo);
@@ -562,6 +594,131 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }
   };
 
+  // -------------------------------------------------------------
+  // Location Modal Handlers (منافذ البيع والفروع)
+  // -------------------------------------------------------------
+  const openAddLocationModal = () => {
+    setEditingLocationId(null);
+    setLocationForm({
+      storeName: 'أسواق التميمي',
+      storeNameEn: 'Tamimi Markets',
+      branchName: '',
+      branchNameEn: '',
+      city: 'الرياض',
+      cityEn: 'Riyadh',
+      mapsUrl: '',
+      isActive: true,
+      notesAr: 'قسم الخضار والفواكه العضوية والمنتجات الريفية الطازجة',
+      notesEn: 'Fresh Organic Produce & Farm Harvest Section',
+    });
+    setLocationModalMode('add');
+  };
+
+  const openEditLocationModal = (loc: StoreLocation) => {
+    setEditingLocationId(loc.id);
+    setLocationForm({
+      storeName: loc.storeName,
+      storeNameEn: loc.storeNameEn || '',
+      branchName: loc.branchName,
+      branchNameEn: loc.branchNameEn || '',
+      city: loc.city,
+      cityEn: loc.cityEn || '',
+      mapsUrl: loc.mapsUrl,
+      isActive: loc.isActive !== false,
+      notesAr: loc.notesAr || '',
+      notesEn: loc.notesEn || '',
+    });
+    setLocationModalMode('edit');
+  };
+
+  const handleSelectPresetChain = (presetId: string) => {
+    const preset = getRetailPreset(presetId);
+    if (preset) {
+      setLocationForm((prev) => ({
+        ...prev,
+        storeName: preset.nameAr,
+        storeNameEn: preset.nameEn,
+      }));
+    }
+  };
+
+  const handleSaveLocation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!locationForm.storeName.trim()) {
+      alert('يرجى تحديد أو إدخال اسم المتجر / السلسلة');
+      return;
+    }
+    if (!locationForm.branchName.trim()) {
+      alert('يرجى إدخال اسم الفرع والحي');
+      return;
+    }
+    if (!locationForm.mapsUrl.trim()) {
+      alert('يرجى إدخال رابط خرائط جوجل المباشر');
+      return;
+    }
+
+    if (locationModalMode === 'add') {
+      addLocation({
+        storeName: locationForm.storeName.trim(),
+        storeNameEn: locationForm.storeNameEn.trim() || locationForm.storeName.trim(),
+        branchName: locationForm.branchName.trim(),
+        branchNameEn: locationForm.branchNameEn.trim() || locationForm.branchName.trim(),
+        city: locationForm.city.trim() || 'الرياض',
+        cityEn: locationForm.cityEn.trim() || 'Riyadh',
+        mapsUrl: locationForm.mapsUrl.trim(),
+        logoUrl: '',
+        isActive: locationForm.isActive,
+        notesAr: locationForm.notesAr.trim(),
+        notesEn: locationForm.notesEn.trim(),
+      });
+      showToast('تم حفظ الفرع وتحديث الموقع فوراً ✅');
+    } else if (locationModalMode === 'edit' && editingLocationId) {
+      updateLocation(editingLocationId, {
+        storeName: locationForm.storeName.trim(),
+        storeNameEn: locationForm.storeNameEn.trim() || locationForm.storeName.trim(),
+        branchName: locationForm.branchName.trim(),
+        branchNameEn: locationForm.branchNameEn.trim() || locationForm.branchName.trim(),
+        city: locationForm.city.trim() || 'الرياض',
+        cityEn: locationForm.cityEn.trim() || 'Riyadh',
+        mapsUrl: locationForm.mapsUrl.trim(),
+        isActive: locationForm.isActive,
+        notesAr: locationForm.notesAr.trim(),
+        notesEn: locationForm.notesEn.trim(),
+      });
+      showToast('تم حفظ التعديلات وتحديث الموقع فوراً ✅');
+    }
+
+    setLocationModalMode(null);
+  };
+
+  const handleConfirmDeleteLocation = () => {
+    if (locationToDelete) {
+      deleteLocation(locationToDelete.id);
+      showToast(`تم حذف فرع "${locationToDelete.branchName}" بنجاح.`);
+      setLocationToDelete(null);
+    }
+  };
+
+  const handleResetLocations = () => {
+    if (window.confirm('هل تريد استعادة قائمة منافذ البيع والفروع الافتراضية؟')) {
+      resetLocations();
+      showToast('تمت استعادة منافذ البيع الافتراضية بنجاح.');
+    }
+  };
+
+  // Filtered locations list for admin
+  const filteredAdminLocations = locations.filter((loc) => {
+    const matchesSearch =
+      locationSearch.trim() === '' ||
+      loc.storeName.toLowerCase().includes(locationSearch.toLowerCase()) ||
+      (loc.storeNameEn && loc.storeNameEn.toLowerCase().includes(locationSearch.toLowerCase())) ||
+      loc.branchName.toLowerCase().includes(locationSearch.toLowerCase()) ||
+      (loc.branchNameEn && loc.branchNameEn.toLowerCase().includes(locationSearch.toLowerCase())) ||
+      loc.city.toLowerCase().includes(locationSearch.toLowerCase());
+    const matchesCity = locationCityFilter === 'all' || loc.city === locationCityFilter;
+    return matchesSearch && matchesCity;
+  });
+
   // Filtered products list for admin
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -724,6 +881,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
+              onClick={() => onNavigate('locations')}
+              className="px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer text-white"
+            >
+              <span>منافذ البيع</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => onNavigate('experience')}
               className="px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer text-white"
             >
@@ -754,11 +919,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
         {/* Navigation Tabs (Mobile-Friendly Pill Tabs) */}
-        <div className="flex items-center gap-2 p-1.5 bg-[#F4EFE6] rounded-2xl border border-[#E7DECD] max-w-2xl mx-auto mb-8 shadow-inner overflow-x-auto">
+        <div className="flex items-center gap-2 p-1.5 bg-[#F4EFE6] rounded-2xl border border-[#E7DECD] max-w-4xl mx-auto mb-8 shadow-inner overflow-x-auto">
           <button
             type="button"
             onClick={() => setActiveTab('products')}
-            className={`flex-1 min-w-[110px] py-3 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'products'
                 ? 'bg-[#1C3322] text-white shadow-md'
                 : 'text-[#50452d] hover:text-[#1C3322]'
@@ -771,7 +936,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <button
             type="button"
             onClick={() => setActiveTab('activities')}
-            className={`flex-1 min-w-[130px] py-3 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[125px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'activities'
                 ? 'bg-[#1C3322] text-white shadow-md'
                 : 'text-[#50452d] hover:text-[#1C3322]'
@@ -784,7 +949,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <button
             type="button"
             onClick={() => setActiveTab('categories')}
-            className={`flex-1 min-w-[110px] py-3 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'categories'
                 ? 'bg-[#1C3322] text-white shadow-md'
                 : 'text-[#50452d] hover:text-[#1C3322]'
@@ -796,8 +961,21 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
           <button
             type="button"
+            onClick={() => setActiveTab('locations')}
+            className={`flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+              activeTab === 'locations'
+                ? 'bg-[#1C3322] text-white shadow-md'
+                : 'text-[#50452d] hover:text-[#1C3322]'
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            <span>منافذ البيع والفروع ({locations.length})</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab('contact')}
-            className={`flex-1 min-w-[110px] py-3 px-3.5 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
               activeTab === 'contact'
                 ? 'bg-[#1C3322] text-white shadow-md'
                 : 'text-[#50452d] hover:text-[#1C3322]'
@@ -1423,6 +1601,217 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                 </div>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* ============================================================= */}
+        {/* TAB 4: LOCATIONS MANAGEMENT (منافذ البيع والفروع)             */}
+        {/* ============================================================= */}
+        {activeTab === 'locations' && (
+          <div className="space-y-6">
+            {/* Header Controls: Add Branch Button & Search & City Filter */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-3xl border border-[#E7DECD] shadow-xs">
+              <div className="flex flex-1 flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-xs">
+                  <Search className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={locationSearch}
+                    onChange={(e) => setLocationSearch(e.target.value)}
+                    placeholder="بحث في الفروع، المتجر، أو الحي..."
+                    className="w-full pr-10 pl-4 py-2 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+
+                <select
+                  value={locationCityFilter}
+                  onChange={(e) => setLocationCityFilter(e.target.value)}
+                  className="px-3.5 py-2 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs font-bold text-[#1C3322] focus:outline-none cursor-pointer"
+                >
+                  <option value="all">كل المدن</option>
+                  <option value="الرياض">الرياض</option>
+                  <option value="الخرج">الخرج</option>
+                  <option value="جدة">جدة</option>
+                  <option value="الدمام">الدمام</option>
+                  <option value="القصيم">القصيم</option>
+                </select>
+
+                <div className="text-xs text-[#50452d] font-bold">
+                  {filteredAdminLocations.length} من أصل {locations.length} فرع
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openAddLocationModal}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#1C3322] hover:bg-emerald-800 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-emerald-400" />
+                  <span>إضافة فرع جديد</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetLocations}
+                  className="p-2.5 rounded-xl bg-[#F4EFE6] hover:bg-[#E7DECD] text-[#50452d] transition-colors cursor-pointer"
+                  title="استعادة الفروع الافتراضية"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Branches Grid */}
+            {filteredAdminLocations.length === 0 ? (
+              <div className="bg-white rounded-3xl p-12 text-center border border-[#E7DECD] space-y-3">
+                <Store className="w-12 h-12 text-gray-400 mx-auto" />
+                <h3 className="text-base font-bold text-[#1C3322]">لا توجد فروع مطابقة</h3>
+                <p className="text-xs text-gray-500">
+                  جرّب تغيير كلمات البحث أو أضف فرعاً جديداً لمنافذ بيع منتجات المزرعة.
+                </p>
+                <button
+                  type="button"
+                  onClick={openAddLocationModal}
+                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1C3322] text-white text-xs font-bold cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>إضافة فرع جديد الآن</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-5">
+                {filteredAdminLocations.map((loc) => {
+                  return (
+                    <div
+                      key={loc.id}
+                      className={`bg-white rounded-3xl p-5 border transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${
+                        loc.isActive
+                          ? 'border-[#E7DECD] shadow-xs hover:shadow-md'
+                          : 'border-dashed border-gray-300 opacity-60 bg-gray-50/50'
+                      }`}
+                    >
+                      <div>
+                        {/* Top Store Info & Status */}
+                        <div className="flex items-center justify-between gap-2 mb-3.5 flex-wrap">
+                          <span className="text-xs font-bold text-[#1C3322] bg-emerald-50/90 px-3.5 py-1 rounded-full border border-emerald-200/90 shadow-2xs">
+                            {loc.storeName}
+                          </span>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-[#50452d] bg-[#F4EFE6] px-3 py-1 rounded-full border border-[#E7DECD] flex items-center gap-1.5 shadow-2xs">
+                              <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>{loc.city}</span>
+                            </span>
+
+                            {/* Quick Active / Hidden Status Pill */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleLocationStatus(loc.id);
+                                showToast(
+                                  loc.isActive
+                                    ? `تم إخفاء فرع "${loc.branchName}" من المتجر.`
+                                    : `تم تفعيل وإظهار فرع "${loc.branchName}" بالمتجر.`
+                                );
+                              }}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
+                                loc.isActive
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : 'bg-gray-200 text-gray-600 border border-gray-300'
+                              }`}
+                              title={loc.isActive ? 'انقر للإخفاء من الموقع' : 'انقر للإظهار بالمتجر'}
+                            >
+                              {loc.isActive ? (
+                                <>
+                                  <Eye className="w-3 h-3 text-emerald-600" />
+                                  <span>مفعل</span>
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-3 h-3 text-gray-500" />
+                                  <span>مخفي</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Branch Title (Full Width) */}
+                        <h3 className="text-base sm:text-lg font-black text-[#1C3322] leading-snug mb-1">
+                          {loc.branchName}
+                        </h3>
+                        {loc.branchNameEn && (
+                          <p className="text-[11px] text-gray-500 font-sans mb-3" dir="ltr">
+                            {loc.branchNameEn}
+                          </p>
+                        )}
+
+                        {/* Notes */}
+                        {loc.notesAr && (
+                          <div className="p-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs text-[#50452d] mb-4 flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                            <span className="leading-relaxed">{loc.notesAr}</span>
+                          </div>
+                        )}
+
+                        {/* Maps Link Preview */}
+                        <div className="mb-4">
+                          <a
+                            href={loc.mapsUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 font-bold hover:underline"
+                          >
+                            <Navigation className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className="truncate max-w-xs">{loc.mapsUrl}</span>
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                          </a>
+                        </div>
+                      </div>
+
+                      {/* Card Action Buttons */}
+                      <div className="pt-3 border-t border-[#F0EAE1] flex items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openEditLocationModal(loc)}
+                          className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>تعديل التفاصيل</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleLocationStatus(loc.id);
+                            showToast(
+                              loc.isActive
+                                ? `تم إخفاء فرع "${loc.branchName}" من المتجر.`
+                                : `تم تفعيل وإظهار فرع "${loc.branchName}" بالمتجر.`
+                            );
+                          }}
+                          className="py-2 px-3 rounded-xl bg-[#F4EFE6] hover:bg-[#EAE2D2] text-[#50452d] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          title={loc.isActive ? 'إخفاء الفرع' : 'إظهار الفرع'}
+                        >
+                          {loc.isActive ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          <span>{loc.isActive ? 'إخفاء' : 'إظهار'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setLocationToDelete(loc)}
+                          className="p-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold transition-colors cursor-pointer"
+                          title="حذف الفرع"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -2440,6 +2829,359 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
               >
                 <Trash2 className="w-4 h-4" />
                 <span>تأكيد حذف البطاقة</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* MODAL 7: ADD / EDIT STORE LOCATION MODAL                      */}
+      {/* ============================================================= */}
+      {locationModalMode && (
+        <div
+          dir="rtl"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+        >
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-8 border border-[#E7DECD] shadow-2xl relative max-h-[92vh] overflow-y-auto text-start">
+            <div className="flex items-center justify-between pb-4 border-b border-[#E7DECD] mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center">
+                  <Store className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-black text-[#1C3322]">
+                  {locationModalMode === 'add' ? 'إضافة منفذ بيع / فرع جديد' : 'تعديل بيانات الفرع'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLocationModalMode(null)}
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLocation} className="space-y-5">
+              {/* Preset Chain Quick Selector */}
+              <div>
+                <label className="block text-xs font-bold text-[#1C3322] mb-1.5">
+                  اختيار سلسلة البيع السريع (Preset Chains) أو تخصيص يدوي
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {RETAIL_PRESETS.map((p) => {
+                    const isSelected = locationForm.storeName === p.nameAr;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectPresetChain(p.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                          isSelected
+                            ? 'bg-[#1C3322] text-white border-[#1C3322] shadow-xs'
+                            : 'bg-[#F9F6F0] text-[#50452d] border-[#E7DECD] hover:bg-[#EAE2D2]'
+                        }`}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: p.accentColor }}
+                        />
+                        <span>{p.nameAr}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 1. Store Chain Name (Ar & En) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    اسم المتجر / السلسلة بالعربية *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={locationForm.storeName}
+                    onChange={(e) => setLocationForm({ ...locationForm, storeName: e.target.value })}
+                    placeholder="مثال: أسواق التميمي، سبينس، مانويل..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    Store Chain (English)
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={locationForm.storeNameEn}
+                    onChange={(e) => setLocationForm({ ...locationForm, storeNameEn: e.target.value })}
+                    placeholder="e.g. Tamimi Markets, Spinneys..."
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600 font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* 2. Branch Name / Area & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    اسم الفرع والحي بالعربية *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={locationForm.branchName}
+                    onChange={(e) => setLocationForm({ ...locationForm, branchName: e.target.value })}
+                    placeholder="مثال: فرع طريق الملك عبد العزيز - حي الياسمين"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    Branch Name & District (English)
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={locationForm.branchNameEn}
+                    onChange={(e) => setLocationForm({ ...locationForm, branchNameEn: e.target.value })}
+                    placeholder="e.g. King Abdulaziz Rd - Al Yasmin District"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600 font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* City / Region */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    المدينة / المنطقة *
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      required
+                      value={locationForm.city}
+                      onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })}
+                      placeholder="الرياض، الخرج، جدة..."
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600"
+                    />
+                    <select
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          setLocationForm({
+                            ...locationForm,
+                            city: e.target.value,
+                            cityEn: e.target.value === 'الرياض' ? 'Riyadh' : e.target.value === 'الخرج' ? 'Al Kharj' : e.target.value === 'جدة' ? 'Jeddah' : 'Dammam',
+                          });
+                        }
+                      }}
+                      className="px-3 py-2.5 rounded-xl bg-[#F4EFE6] border border-[#E7DECD] text-xs font-bold cursor-pointer text-[#1C3322]"
+                    >
+                      <option value="">مدن شائعة</option>
+                      <option value="الرياض">الرياض</option>
+                      <option value="الخرج">الخرج</option>
+                      <option value="جدة">جدة</option>
+                      <option value="الدمام">الدمام</option>
+                      <option value="القصيم">القصيم</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                    City Name (English)
+                  </label>
+                  <input
+                    type="text"
+                    dir="ltr"
+                    value={locationForm.cityEn}
+                    onChange={(e) => setLocationForm({ ...locationForm, cityEn: e.target.value })}
+                    placeholder="e.g. Riyadh, Al Kharj, Jeddah"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600 font-sans"
+                  />
+                </div>
+              </div>
+
+              {/* 3. Google Maps Link */}
+              <div>
+                <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                  رابط خرائط جوجل المباشر (Google Maps Link) *
+                </label>
+                <div className="relative">
+                  <Navigation className="w-4 h-4 text-emerald-600 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="url"
+                    required
+                    dir="ltr"
+                    value={locationForm.mapsUrl}
+                    onChange={(e) => setLocationForm({ ...locationForm, mapsUrl: e.target.value })}
+                    placeholder="https://maps.app.goo.gl/... أو https://goo.gl/maps/..."
+                    className="w-full pr-10 pl-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600 font-sans text-start"
+                  />
+                </div>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-[#50452d]">
+                  <span>💡 انسخ رابط المشاركة المباشر من تطبيق خرائط جوجل وسينقل العميل للملاحة فوراً.</span>
+                  {locationForm.mapsUrl && (
+                    <a
+                      href={locationForm.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 font-bold hover:underline inline-flex items-center gap-1"
+                    >
+                      <span>اختبار الرابط ↗</span>
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Notes / Department info (وصف إضافي اختياري) */}
+              <div>
+                <label className="block text-xs font-bold text-[#1C3322] mb-1">
+                  وصف إضافي اختياري (مثل: "ركن المنتجات العضوية", "توريد مباشر يومي من المزرعة")
+                </label>
+                <input
+                  type="text"
+                  value={locationForm.notesAr}
+                  onChange={(e) => setLocationForm({ ...locationForm, notesAr: e.target.value })}
+                  placeholder="مثال: قسم الخضار والفواكه العضوية والمنتجات الريفية الطازجة"
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs sm:text-sm focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+
+              {/* 5. Status Toggle: Active / Hidden */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F4EFE6] border border-[#E7DECD]">
+                <div>
+                  <span className="block text-xs font-bold text-[#1C3322]">
+                    حالة ظهور الفرع في الموقع
+                  </span>
+                  <span className="block text-[11px] text-[#50452d]">
+                    {locationForm.isActive
+                      ? 'الفرع مفعل ومعروض للزوار في صفحة "أين تجد منتجاتنا؟"'
+                      : 'الفرع مخفي مؤقتاً ولن يظهر للزوار.'}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setLocationForm({ ...locationForm, isActive: !locationForm.isActive })}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    locationForm.isActive
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-gray-300 text-gray-700'
+                  }`}
+                >
+                  {locationForm.isActive ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>مفعل</span>
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>مخفي</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Live Card Preview Box (No Logo, Clean Badges & Full Width Title) */}
+              <div className="pt-2">
+                <span className="block text-[11px] font-bold text-[#50452d] uppercase tracking-wider mb-2">
+                  معاينة حية لشكل بطاقة الفرع بالمتجر:
+                </span>
+                <div className="p-5 rounded-2xl bg-white border border-[#E7DECD] shadow-sm text-start space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-[#1C3322] bg-emerald-50/90 px-3.5 py-1 rounded-full border border-emerald-200/90 shadow-2xs">
+                      {locationForm.storeName || 'اسم المتجر'}
+                    </span>
+                    <span className="text-xs font-bold text-[#50452d] bg-[#F4EFE6] px-3 py-1 rounded-full border border-[#E7DECD] flex items-center gap-1.5 shadow-2xs">
+                      <MapPin className="w-3.5 h-3.5 text-emerald-700" />
+                      <span>{locationForm.city || 'المدينة'}</span>
+                    </span>
+                  </div>
+
+                  <h4 className="text-base sm:text-lg font-black text-[#1C3322] leading-snug">
+                    {locationForm.branchName || 'اسم الفرع والحي'}
+                  </h4>
+
+                  {locationForm.notesAr && (
+                    <div className="p-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-xs text-[#50452d] flex items-start gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                      <span>{locationForm.notesAr}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2 border-t border-[#F0EAE1]">
+                    <div className="w-full py-2.5 px-3 rounded-xl bg-[#1C3322] text-white text-xs font-bold flex items-center justify-center gap-1.5">
+                      <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>فتح في خرائط جوجل 📍</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              <div className="pt-4 border-t border-[#E7DECD] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setLocationModalMode(null)}
+                  className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-[#1C3322] hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4 text-emerald-400" />
+                  <span>{locationModalMode === 'add' ? 'إضافة الفرع فوراً' : 'حفظ التعديلات'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* MODAL 8: DELETE LOCATION CONFIRMATION DIALOG                   */}
+      {/* ============================================================= */}
+      {locationToDelete && (
+        <div
+          dir="rtl"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+        >
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 border border-[#E7DECD] shadow-2xl text-center space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-lg font-black text-[#1C3322]">
+              هل أنت متأكد من حذف هذا الفرع؟
+            </h3>
+            <p className="text-xs text-[#50452d] leading-relaxed">
+              سيتم حذف فرع <strong className="text-red-700">"{locationToDelete.storeName} - {locationToDelete.branchName}"</strong> نهائياً من خريطة منافذ البيع.
+            </p>
+
+            <div className="pt-3 flex items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={() => setLocationToDelete(null)}
+                className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                تراجع
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDeleteLocation}
+                className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>تأكيد الحذف</span>
               </button>
             </div>
           </div>

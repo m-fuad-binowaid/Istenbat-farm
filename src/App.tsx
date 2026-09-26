@@ -9,6 +9,7 @@ import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { ExperiencePage } from './pages/ExperiencePage';
+import { LocationsPage } from './pages/LocationsPage';
 import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
 import { MessageCircle, ArrowUp } from 'lucide-react';
@@ -40,7 +41,7 @@ function AppContent() {
       const directPath = pathSegments.join('/');
 
       const target = hash || directPath;
-      if (['home', 'about', 'products', 'experience', 'contact', 'admin'].includes(target)) {
+      if (['home', 'about', 'products', 'locations', 'experience', 'contact', 'admin'].includes(target)) {
         setRoute(target as PageRoute);
       } else {
         setRoute('home');
@@ -93,6 +94,7 @@ function AppContent() {
         {route === 'home' && <HomePage onNavigate={navigateTo} />}
         {route === 'about' && <AboutPage onNavigate={navigateTo} />}
         {route === 'products' && <ProductsPage onNavigate={navigateTo} />}
+        {route === 'locations' && <LocationsPage onNavigate={navigateTo} />}
         {route === 'experience' && <ExperiencePage onNavigate={navigateTo} />}
         {route === 'contact' && <ContactPage onNavigate={navigateTo} />}
       </main>
