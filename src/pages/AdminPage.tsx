@@ -40,7 +40,52 @@ import {
   Building2,
   ExternalLink,
   ArrowUpRight,
+  Shield,
+  ShieldCheck,
+  UserCog,
+  ToggleLeft,
+  ToggleRight,
+  Crown,
+  User,
 } from 'lucide-react';
+
+// ─────────────────────────────────────────────────────────────
+// RBAC HELPERS
+// ─────────────────────────────────────────────────────────────
+type Role = 'owner' | 'assistant';
+
+interface AssistantPermissions {
+  products: boolean;
+  locations: boolean;
+  gallery: boolean;
+  contact: boolean;
+}
+
+const DEFAULT_OWNER_PIN = '882244';
+const DEFAULT_ASSISTANT_PIN = '113355';
+const DEFAULT_PERMISSIONS: AssistantPermissions = {
+  products: true,
+  locations: true,
+  gallery: false,
+  contact: false,
+};
+
+function getOwnerPin(): string {
+  return localStorage.getItem('estinbat_owner_pin') || DEFAULT_OWNER_PIN;
+}
+function getAssistantPin(): string {
+  return localStorage.getItem('estinbat_assistant_pin') || DEFAULT_ASSISTANT_PIN;
+}
+function getPermissions(): AssistantPermissions {
+  try {
+    const raw = localStorage.getItem('estinbat_assistant_permissions');
+    if (raw) return { ...DEFAULT_PERMISSIONS, ...JSON.parse(raw) };
+  } catch {}
+  return { ...DEFAULT_PERMISSIONS };
+}
+function savePermissions(p: AssistantPermissions) {
+  localStorage.setItem('estinbat_assistant_permissions', JSON.stringify(p));
+}
 
 const PRESET_FARM_ASSETS = [
   { path: '/assets/fruitsvegies10.jpg', name: 'خضار وفواكه المزرعة' },
@@ -101,15 +146,41 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     resetAllToDefaults,
   } = useFarmData();
 
-  // PIN Authentication State (Stored in sessionStorage)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return sessionStorage.getItem('istenbat_admin_auth') === 'true';
+  // ─── RBAC Auth State ────────────────────────────────────────────
+  const [activeRole, setActiveRole] = useState<Role | null>(() => {
+    return (localStorage.getItem('estinbat_active_role') as Role | null) || null;
   });
+  const isAuthenticated = activeRole !== null;
+  const isOwner = activeRole === 'owner';
+
+  // Login form state
+  const [selectedLoginRole, setSelectedLoginRole] = useState<Role>('owner');
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
 
-  // Active Tab
-  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'activities' | 'locations' | 'contact'>('products');
+  // Permissions state
+  const [permissions, setPermissionsState] = useState<AssistantPermissions>(getPermissions);
+
+  const updatePermissions = (updated: AssistantPermissions) => {
+    savePermissions(updated);
+    setPermissionsState(updated);
+  };
+
+  // PIN management state (for the settings/permissions tab)
+  const [ownerPinForm, setOwnerPinForm] = useState({ newPin: '', confirmPin: '' });
+  const [assistantPinOverride, setAssistantPinOverride] = useState('');
+  const [assistantCurrentPin, setAssistantCurrentPin] = useState('');
+  const [assistantNewPin, setAssistantNewPin] = useState('');
+  const [assistantConfirmPin, setAssistantConfirmPin] = useState('');
+  const [pinMgmtMsg, setPinMgmtMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const showPinMsg = (type: 'success' | 'error', text: string) => {
+    setPinMgmtMsg({ type, text });
+    setTimeout(() => setPinMgmtMsg(null), 4000);
+  };
+
+  // Active Tab — union includes permissions tab for owner
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'activities' | 'locations' | 'contact' | 'permissions'>('products');
 
   // Search & Filter in Products
   const [productSearch, setProductSearch] = useState('');
@@ -208,24 +279,101 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }, 3500);
   };
 
-  // PIN Gate Submit Handler
+  // ─── RBAC Auth Handlers ─────────────────────────────────────────
   const handlePinSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (pinInput === '1234') {
-      setIsAuthenticated(true);
-      sessionStorage.setItem('istenbat_admin_auth', 'true');
+    const correctPin =
+      selectedLoginRole === 'owner' ? getOwnerPin() : getAssistantPin();
+    if (pinInput === correctPin) {
+      // Initialize defaults if not set
+      if (!localStorage.getItem('estinbat_owner_pin')) {
+        localStorage.setItem('estinbat_owner_pin', DEFAULT_OWNER_PIN);
+      }
+      if (!localStorage.getItem('estinbat_assistant_pin')) {
+        localStorage.setItem('estinbat_assistant_pin', DEFAULT_ASSISTANT_PIN);
+      }
+      if (!localStorage.getItem('estinbat_assistant_permissions')) {
+        savePermissions(DEFAULT_PERMISSIONS);
+      }
+      localStorage.setItem('estinbat_active_role', selectedLoginRole);
+      setActiveRole(selectedLoginRole);
+      setPermissionsState(getPermissions());
       setPinError('');
-      showToast('مرحباً بك! تم تسجيل الدخول إلى لوحة التحكم بنجاح');
+      setPinInput('');
+      // Default tab: for assistant, pick first allowed tab
+      if (selectedLoginRole === 'assistant') {
+        const perms = getPermissions();
+        if (perms.products) setActiveTab('products');
+        else if (perms.locations) setActiveTab('locations');
+        else if (perms.gallery) setActiveTab('activities');
+        else if (perms.contact) setActiveTab('contact');
+      } else {
+        setActiveTab('products');
+      }
+      showToast(
+        selectedLoginRole === 'owner'
+          ? 'مرحباً بك يا مالك المزرعة! تم تسجيل الدخول بنجاح 👑'
+          : 'مرحباً! تم تسجيل دخول مساعد الإدارة بنجاح ✅'
+      );
     } else {
-      setPinError('رمز المرور غير صحيح. الرمز الافتراضي هو 1234');
+      setPinError('رمز المرور غير صحيح، يرجى المحاولة مرة أخرى');
       setPinInput('');
     }
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    sessionStorage.removeItem('istenbat_admin_auth');
+    setActiveRole(null);
+    localStorage.removeItem('estinbat_active_role');
     setPinInput('');
+    setPinError('');
+  };
+
+  // ─── PIN Management Handlers ────────────────────────────────────
+  const handleChangeOwnerPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (ownerPinForm.newPin.length < 4) {
+      showPinMsg('error', 'يجب أن يكون الرمز الجديد 4 أرقام على الأقل');
+      return;
+    }
+    if (ownerPinForm.newPin !== ownerPinForm.confirmPin) {
+      showPinMsg('error', 'رمزا المرور غير متطابقين');
+      return;
+    }
+    localStorage.setItem('estinbat_owner_pin', ownerPinForm.newPin);
+    setOwnerPinForm({ newPin: '', confirmPin: '' });
+    showPinMsg('success', 'تم تغيير رمز مرور المالك بنجاح ✅');
+  };
+
+  const handleOwnerResetAssistantPin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (assistantPinOverride.length < 4) {
+      showPinMsg('error', 'الرمز الجديد للمساعد يجب أن يكون 4 أرقام على الأقل');
+      return;
+    }
+    localStorage.setItem('estinbat_assistant_pin', assistantPinOverride);
+    setAssistantPinOverride('');
+    showPinMsg('success', 'تم إعادة تعيين رمز مرور المساعد بنجاح ✅');
+  };
+
+  const handleAssistantChangePin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (assistantCurrentPin !== getAssistantPin()) {
+      showPinMsg('error', 'رمز المرور الحالي غير صحيح');
+      return;
+    }
+    if (assistantNewPin.length < 4) {
+      showPinMsg('error', 'الرمز الجديد يجب أن يكون 4 أرقام على الأقل');
+      return;
+    }
+    if (assistantNewPin !== assistantConfirmPin) {
+      showPinMsg('error', 'رمزا المرور الجديدان غير متطابقين');
+      return;
+    }
+    localStorage.setItem('estinbat_assistant_pin', assistantNewPin);
+    setAssistantCurrentPin('');
+    setAssistantNewPin('');
+    setAssistantConfirmPin('');
+    showPinMsg('success', 'تم تغيير رمز مرور حسابك بنجاح ✅');
   };
 
   // -------------------------------------------------------------
@@ -729,8 +877,27 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     return matchesSearch && matchesCategory;
   });
 
+  // ─── Tab visibility helpers ──────────────────────────────────────
+  // For assistant: map tab names to permission keys
+  const tabPermissionMap: Record<string, keyof AssistantPermissions | null> = {
+    products: 'products',
+    categories: 'products', // categories are part of products scope
+    activities: 'gallery',
+    locations: 'locations',
+    contact: 'contact',
+    permissions: null, // owner-only, handled separately
+  };
+
+  const canAccessTab = (tab: string): boolean => {
+    if (isOwner) return true;
+    if (tab === 'permissions') return false;
+    const key = tabPermissionMap[tab];
+    if (!key) return false;
+    return permissions[key] === true;
+  };
+
   // -------------------------------------------------------------
-  // VIEW A: PIN Authentication Screen (if not authenticated)
+  // VIEW A: Dual-Role Login Screen (if not authenticated)
   // -------------------------------------------------------------
   if (!isAuthenticated) {
     return (
@@ -743,7 +910,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
         <div className="max-w-md w-full bg-[#1C3322]/90 border border-[#2D4C35] rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-md relative z-10 text-center">
           <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center mx-auto mb-4 text-emerald-400">
-            <Lock className="w-8 h-8" />
+            <ShieldCheck className="w-8 h-8" />
           </div>
 
           <span className="text-xs font-bold text-emerald-400 tracking-wider uppercase block mb-1">
@@ -752,9 +919,44 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <h1 className="text-2xl sm:text-3xl font-black text-white mb-2">
             مزرعة بيت الاستنبات
           </h1>
-          <p className="text-xs sm:text-sm text-[#A1B8A7] mb-6 leading-relaxed">
-            يرجى إدخال رمز المرور (PIN) للوصول إلى أدوات التحكم في المنتجات، وسائط الأنشطة، والأصناف.
+          <p className="text-xs sm:text-sm text-[#A1B8A7] mb-5 leading-relaxed">
+            اختر نوع الحساب ثم أدخل رمز المرور للوصول إلى لوحة التحكم.
           </p>
+
+          {/* Role Selector */}
+          <div className="flex gap-3 mb-5">
+            <button
+              type="button"
+              onClick={() => { setSelectedLoginRole('owner'); setPinInput(''); setPinError(''); }}
+              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                selectedLoginRole === 'owner'
+                  ? 'border-amber-400 bg-amber-500/10 text-amber-300'
+                  : 'border-[#2D4C35] bg-[#122216]/60 text-[#A1B8A7] hover:border-emerald-600'
+              }`}
+            >
+              <Crown className="w-6 h-6" />
+              <div>
+                <div className="text-xs font-black">المالك</div>
+                <div className="text-[10px] opacity-80">المدير العام</div>
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setSelectedLoginRole('assistant'); setPinInput(''); setPinError(''); }}
+              className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                selectedLoginRole === 'assistant'
+                  ? 'border-emerald-400 bg-emerald-500/10 text-emerald-300'
+                  : 'border-[#2D4C35] bg-[#122216]/60 text-[#A1B8A7] hover:border-emerald-600'
+              }`}
+            >
+              <User className="w-6 h-6" />
+              <div>
+                <div className="text-xs font-black">مساعد الإدارة</div>
+                <div className="text-[10px] opacity-80">Sub-user</div>
+              </div>
+            </button>
+          </div>
 
           <form onSubmit={handlePinSubmit} className="space-y-4">
             <div className="relative">
@@ -768,7 +970,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
                   setPinInput(e.target.value);
                   setPinError('');
                 }}
-                placeholder="أدخل رمز الدخول (الافتراضي: 1234)"
+                placeholder={selectedLoginRole === 'owner' ? 'رمز مرور المالك...' : 'رمز مرور المساعد...'}
                 autoFocus
                 className="w-full px-4 py-3.5 rounded-2xl bg-[#122216] border border-[#2D4C35] text-center text-xl font-bold tracking-widest text-emerald-300 placeholder:text-gray-500 placeholder:text-sm placeholder:tracking-normal focus:outline-none focus:border-emerald-500 transition-colors"
               />
@@ -783,10 +985,14 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             <button
               type="submit"
-              className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-400 text-[#122216] font-bold text-sm sm:text-base rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+              className={`w-full py-3.5 font-bold text-sm sm:text-base rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                selectedLoginRole === 'owner'
+                  ? 'bg-amber-500 hover:bg-amber-400 text-[#122216]'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-[#122216]'
+              }`}
             >
               <KeyRound className="w-5 h-5" />
-              <span>دخول لوحة التحكم</span>
+              <span>{selectedLoginRole === 'owner' ? 'دخول كمالك' : 'دخول كمساعد إدارة'}</span>
             </button>
           </form>
 
@@ -866,14 +1072,18 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold">
-              إدارة
+              {isOwner ? <Crown className="w-5 h-5 text-amber-400" /> : <User className="w-5 h-5" />}
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-black leading-tight">
                 لوحة تحكم بيت الاستنبات
               </h1>
-              <p className="text-[11px] text-[#A1B8A7]">
-                التحكم المباشر في المنتجات، وسائط الأنشطة والتجارب، والأصناف، والتواصل
+              <p className="text-[11px] text-[#A1B8A7] flex items-center gap-1.5">
+                {isOwner ? (
+                  <><Crown className="w-3 h-3 text-amber-400" /> <span className="text-amber-300 font-bold">المالك والمدير العام</span></>
+                ) : (
+                  <><User className="w-3 h-3" /> <span>مساعد الإدارة</span></>
+                )}
               </p>
             </div>
           </div>
@@ -882,7 +1092,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate('locations')}
-              className="px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer text-white"
+              className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>منافذ البيع</span>
             </button>
@@ -890,7 +1100,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate('experience')}
-              className="px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer text-white"
+              className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>معاينة الأنشطة</span>
             </button>
@@ -898,7 +1108,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={() => onNavigate('products')}
-              className="px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer text-white"
+              className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>معاينة المتجر</span>
             </button>
@@ -906,11 +1116,11 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             <button
               type="button"
               onClick={handleLogout}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-xl bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-200 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
               title="تسجيل الخروج"
             >
               <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">خروج</span>
+              <span className="hidden sm:inline">تسجيل الخروج</span>
             </button>
           </div>
         </div>
@@ -918,72 +1128,114 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
-        {/* Navigation Tabs (Mobile-Friendly Pill Tabs) */}
-        <div className="flex items-center gap-2 p-1.5 bg-[#F4EFE6] rounded-2xl border border-[#E7DECD] max-w-4xl mx-auto mb-8 shadow-inner overflow-x-auto">
-          <button
-            type="button"
-            onClick={() => setActiveTab('products')}
-            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'products'
-                ? 'bg-[#1C3322] text-white shadow-md'
-                : 'text-[#50452d] hover:text-[#1C3322]'
-            }`}
-          >
-            <Package className="w-4 h-4" />
-            <span>المنتجات ({products.length})</span>
-          </button>
+        {/* Navigation Tabs — dynamically filtered for assistant role */}
+        <div className="flex items-center gap-2 p-1.5 bg-[#F4EFE6] rounded-2xl border border-[#E7DECD] max-w-5xl mx-auto mb-8 shadow-inner overflow-x-auto">
+          {canAccessTab('products') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('products')}
+              className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'products'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <Package className="w-4 h-4" />
+              <span>المنتجات ({products.length})</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('activities')}
-            className={`flex-1 min-w-[125px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'activities'
-                ? 'bg-[#1C3322] text-white shadow-md'
-                : 'text-[#50452d] hover:text-[#1C3322]'
-            }`}
-          >
-            <Compass className="w-4 h-4" />
-            <span>بطاقات الأنشطة ({activities.length})</span>
-          </button>
+          {canAccessTab('activities') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('activities')}
+              className={`flex-1 min-w-[125px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'activities'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <Compass className="w-4 h-4" />
+              <span>مقتطفات المزرعة ({activities.length})</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('categories')}
-            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'categories'
-                ? 'bg-[#1C3322] text-white shadow-md'
-                : 'text-[#50452d] hover:text-[#1C3322]'
-            }`}
-          >
-            <Tags className="w-4 h-4" />
-            <span>الأصناف ({categories.length})</span>
-          </button>
+          {canAccessTab('categories') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('categories')}
+              className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'categories'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <Tags className="w-4 h-4" />
+              <span>الأصناف ({categories.length})</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('locations')}
-            className={`flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'locations'
-                ? 'bg-[#1C3322] text-white shadow-md'
-                : 'text-[#50452d] hover:text-[#1C3322]'
-            }`}
-          >
-            <Store className="w-4 h-4" />
-            <span>منافذ البيع والفروع ({locations.length})</span>
-          </button>
+          {canAccessTab('locations') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('locations')}
+              className={`flex-1 min-w-[130px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'locations'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <Store className="w-4 h-4" />
+              <span>منافذ البيع ({locations.length})</span>
+            </button>
+          )}
 
-          <button
-            type="button"
-            onClick={() => setActiveTab('contact')}
-            className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              activeTab === 'contact'
-                ? 'bg-[#1C3322] text-white shadow-md'
-                : 'text-[#50452d] hover:text-[#1C3322]'
-            }`}
-          >
-            <Phone className="w-4 h-4" />
-            <span>التواصل</span>
-          </button>
+          {canAccessTab('contact') && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('contact')}
+              className={`flex-1 min-w-[105px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'contact'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <Phone className="w-4 h-4" />
+              <span>التواصل</span>
+            </button>
+          )}
+
+          {/* Permissions tab — owner only */}
+          {isOwner && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('permissions')}
+              className={`flex-1 min-w-[135px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'permissions'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-amber-700 hover:text-amber-900 bg-amber-50'
+              }`}
+            >
+              <Shield className="w-4 h-4" />
+              <span>صلاحيات المساعد</span>
+            </button>
+          )}
+
+          {/* Assistant change PIN tab */}
+          {!isOwner && (
+            <button
+              type="button"
+              onClick={() => setActiveTab('permissions')}
+              className={`flex-1 min-w-[115px] py-3 px-3 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                activeTab === 'permissions'
+                  ? 'bg-[#1C3322] text-white shadow-md'
+                  : 'text-[#50452d] hover:text-[#1C3322]'
+              }`}
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>رمز المرور</span>
+            </button>
+          )}
         </div>
 
         {/* ============================================================= */}
@@ -1605,6 +1857,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         )}
 
         {/* ============================================================= */}
+        {/* ACCESS DENIED — shown if assistant tries to access hidden tab  */}
+        {/* ============================================================= */}
+        {!isOwner && !canAccessTab(activeTab) && activeTab !== 'permissions' && (
+          <div className="flex flex-col items-center justify-center min-h-[40vh] gap-6 text-center">
+            <div className="w-20 h-20 rounded-3xl bg-red-50 border border-red-200 flex items-center justify-center">
+              <Shield className="w-10 h-10 text-red-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-[#1C3322] mb-2">عذراً، هذا القسم غير متاح</h2>
+              <p className="text-sm text-[#50452d] leading-relaxed max-w-sm">
+                عذراً، هذا القسم غير متاح لصلاحيات حسابك.
+                <br />يرجى التواصل مع مالك المزرعة لتفعيل الوصول.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================= */}
         {/* TAB 4: LOCATIONS MANAGEMENT (منافذ البيع والفروع)             */}
         {/* ============================================================= */}
         {activeTab === 'locations' && (
@@ -1814,6 +2084,228 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
             )}
           </div>
         )}
+
+        {/* ============================================================= */}
+        {/* TAB: PERMISSIONS MANAGEMENT (owner) / PIN CHANGE (assistant)  */}
+        {/* ============================================================= */}
+        {activeTab === 'permissions' && (
+          <div className="max-w-3xl mx-auto space-y-6 text-start">
+
+            {/* ───── OWNER: Permissions & PIN Management ───── */}
+            {isOwner && (
+              <>
+                {/* Permissions Card */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E7DECD] shadow-xs space-y-5">
+                  <div className="pb-4 mb-2 border-b border-[#E7DECD] flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-[#1C3322]">صلاحيات حساب مساعد الإدارة</h2>
+                      <p className="text-xs text-[#50452d]">فعّل أو أوقف الأقسام التي يمكن للمساعد الوصول إليها.</p>
+                    </div>
+                  </div>
+
+                  {([
+                    { key: 'products' as const, labelAr: 'المنتجات والمحاصيل', desc: 'إدارة المنتجات والأصناف' },
+                    { key: 'locations' as const, labelAr: 'أين تجدنا / منافذ البيع', desc: 'إدارة فروع البيع والخرائط' },
+                    { key: 'gallery' as const, labelAr: 'مقتطفات من المزرعة', desc: 'بطاقات الأنشطة والتجارب' },
+                    { key: 'contact' as const, labelAr: 'بيانات ورسائل التواصل', desc: 'أرقام الاتصال وساعات العمل' },
+                  ]).map(({ key, labelAr, desc }) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-4 rounded-2xl bg-[#F9F6F0] border border-[#E7DECD] hover:border-emerald-300 transition-all"
+                    >
+                      <div>
+                        <div className="text-sm font-black text-[#1C3322]">{labelAr}</div>
+                        <div className="text-xs text-[#50452d]">{desc}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => updatePermissions({ ...permissions, [key]: !permissions[key] })}
+                        className={`relative flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          permissions[key]
+                            ? 'bg-emerald-600 text-white shadow-sm'
+                            : 'bg-gray-200 text-gray-600'
+                        }`}
+                        title={permissions[key] ? 'انقر للإيقاف' : 'انقر للتفعيل'}
+                      >
+                        {permissions[key] ? (
+                          <><ToggleRight className="w-4 h-4" /><span>مفعّل</span></>
+                        ) : (
+                          <><ToggleLeft className="w-4 h-4" /><span>موقوف</span></>
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* PIN Management Card for Owner */}
+                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E7DECD] shadow-xs space-y-6">
+                  <div className="pb-3 border-b border-[#E7DECD] flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                      <Crown className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-black text-[#1C3322]">إدارة رموز المرور (PIN)</h2>
+                      <p className="text-xs text-[#50452d]">تغيير رمز المالك أو إعادة تعيين رمز المساعد.</p>
+                    </div>
+                  </div>
+
+                  {pinMgmtMsg && (
+                    <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                      pinMgmtMsg.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        : 'bg-red-50 text-red-800 border border-red-200'
+                    }`}>
+                      {pinMgmtMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                      <span>{pinMgmtMsg.text}</span>
+                    </div>
+                  )}
+
+                  {/* Change owner PIN */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-black text-[#1C3322] flex items-center gap-2">
+                      <Crown className="w-4 h-4 text-amber-500" />
+                      تغيير رمز مرور المالك
+                    </h3>
+                    <form onSubmit={handleChangeOwnerPin} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={ownerPinForm.newPin}
+                        onChange={(e) => setOwnerPinForm({ ...ownerPinForm, newPin: e.target.value })}
+                        placeholder="الرمز الجديد"
+                        className="px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-amber-500"
+                      />
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={ownerPinForm.confirmPin}
+                        onChange={(e) => setOwnerPinForm({ ...ownerPinForm, confirmPin: e.target.value })}
+                        placeholder="تأكيد الرمز"
+                        className="px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-[#1C3322] text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Save className="w-3.5 h-3.5" />
+                        <span>حفظ رمز المالك</span>
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Override assistant PIN */}
+                  <div className="space-y-3 pt-4 border-t border-[#E7DECD]">
+                    <h3 className="text-sm font-black text-[#1C3322] flex items-center gap-2">
+                      <User className="w-4 h-4 text-emerald-600" />
+                      إعادة تعيين رمز مرور المساعد
+                    </h3>
+                    <form onSubmit={handleOwnerResetAssistantPin} className="flex gap-3">
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={assistantPinOverride}
+                        onChange={(e) => setAssistantPinOverride(e.target.value)}
+                        placeholder="الرمز الجديد للمساعد"
+                        className="flex-1 px-4 py-2.5 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-emerald-600"
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>إعادة تعيين</span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ───── ASSISTANT: PIN Change only ───── */}
+            {!isOwner && (
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#E7DECD] shadow-xs space-y-5">
+                <div className="pb-3 border-b border-[#E7DECD] flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-black text-[#1C3322]">تغيير رمز مرور حسابي</h2>
+                    <p className="text-xs text-[#50452d]">يمكنك تغيير رمز مرور حساب مساعد الإدارة.</p>
+                  </div>
+                </div>
+
+                {pinMgmtMsg && (
+                  <div className={`p-3 rounded-xl text-xs font-bold flex items-center gap-2 ${
+                    pinMgmtMsg.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'bg-red-50 text-red-800 border border-red-200'
+                  }`}>
+                    {pinMgmtMsg.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                    <span>{pinMgmtMsg.text}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleAssistantChangePin} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-[#1C3322] mb-1.5">رمز المرور الحالي *</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={8}
+                      value={assistantCurrentPin}
+                      onChange={(e) => setAssistantCurrentPin(e.target.value)}
+                      placeholder="أدخل رمز المرور الحالي"
+                      className="w-full px-4 py-3 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-emerald-600"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#1C3322] mb-1.5">الرمز الجديد *</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={assistantNewPin}
+                        onChange={(e) => setAssistantNewPin(e.target.value)}
+                        placeholder="رمز جديد (4 أرقام على الأقل)"
+                        className="w-full px-4 py-3 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-emerald-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#1C3322] mb-1.5">تأكيد الرمز الجديد *</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        maxLength={8}
+                        value={assistantConfirmPin}
+                        onChange={(e) => setAssistantConfirmPin(e.target.value)}
+                        placeholder="أعد كتابة الرمز الجديد"
+                        className="w-full px-4 py-3 rounded-xl bg-[#F9F6F0] border border-[#E7DECD] text-sm text-center tracking-widest font-bold focus:outline-none focus:border-emerald-600"
+                      />
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto px-8 py-3 rounded-2xl bg-[#1C3322] hover:bg-emerald-800 text-white font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Save className="w-4 h-4 text-emerald-400" />
+                      <span>حفظ الرمز الجديد</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+          </div>
+        )}
+
       </main>
 
       {/* ============================================================= */}
