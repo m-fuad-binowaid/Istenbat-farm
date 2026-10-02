@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Product, ContactSettings, CategoryItem, ActivityCard, StoreLocation } from '../types';
 import {
   OFFICIAL_INFO,
@@ -7,6 +7,39 @@ import {
   INITIAL_ACTIVITIES,
   INITIAL_LOCATIONS,
 } from '../data/content';
+
+// ─── KV Keys ─────────────────────────────────────────────────────────────────
+const KV_KEY_LOCATIONS   = 'estinbat_locations';
+const KV_KEY_PRODUCTS    = 'estinbat_products';
+const KV_KEY_CATEGORIES  = 'estinbat_categories';
+const KV_KEY_GALLERY     = 'estinbat_gallery';
+const KV_KEY_CONTACT     = 'estinbat_contact';
+
+// ─── KV API Helpers ───────────────────────────────────────────────────────────
+/** Fetch a value from Cloudflare KV via the Pages Function. Returns null on any error. */
+async function kvGet<T>(key: string): Promise<T | null> {
+  try {
+    const res = await fetch(`/api/data?key=${encodeURIComponent(key)}`, {
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { data: T | null };
+    return json.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Write a value to Cloudflare KV via the Pages Function. Fire-and-forget. */
+function kvPut(key: string, data: unknown): void {
+  fetch('/api/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, data }),
+  }).catch((err) => {
+    console.warn(`[KV] Failed to persist key "${key}":`, err);
+  });
+}
 
 export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
   whatsapp: '+966501207704',
@@ -148,49 +181,100 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return INITIAL_PRODUCTS;
   });
 
-  // Automatically save contactInfo to localStorage on change
+  // ─── KV hydration flag ─────────────────────────────────────────────────────
+  // Prevents the initial state-set (during KV hydration) from triggering redundant writes.
+  const kvHydratedRef = useRef(false);
+
+  // ─── On Mount: Hydrate from Cloudflare KV ──────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrateFromKV() {
+      const [kvLocations, kvProducts, kvCategories, kvActivities, kvContact] =
+        await Promise.all([
+          kvGet<StoreLocation[]>(KV_KEY_LOCATIONS),
+          kvGet<Product[]>(KV_KEY_PRODUCTS),
+          kvGet<CategoryItem[]>(KV_KEY_CATEGORIES),
+          kvGet<ActivityCard[]>(KV_KEY_GALLERY),
+          kvGet<ContactSettings>(KV_KEY_CONTACT),
+        ]);
+      if (cancelled) return;
+      if (kvLocations && Array.isArray(kvLocations) && kvLocations.length > 0) {
+        setLocations(kvLocations);
+        try { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(kvLocations)); } catch {}
+      }
+      if (kvProducts && Array.isArray(kvProducts) && kvProducts.length > 0) {
+        setProducts(kvProducts);
+        try { localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(kvProducts)); } catch {}
+      }
+      if (kvCategories && Array.isArray(kvCategories) && kvCategories.length > 0) {
+        setCategories(kvCategories);
+        try { localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(kvCategories)); } catch {}
+      }
+      if (kvActivities && Array.isArray(kvActivities) && kvActivities.length > 0) {
+        setActivities(kvActivities);
+        try { localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(kvActivities)); } catch {}
+      }
+      if (kvContact && typeof kvContact === 'object') {
+        const merged = { ...DEFAULT_CONTACT_SETTINGS, ...kvContact };
+        setContactInfo(merged);
+        try { localStorage.setItem(STORAGE_KEY_CONTACT, JSON.stringify(merged)); } catch {}
+      }
+      // Only enable KV writes after hydration completes
+      kvHydratedRef.current = true;
+    }
+    hydrateFromKV();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ─── Persist contactInfo to localStorage + KV on change ────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_CONTACT, JSON.stringify(contactInfo));
     } catch (e) {
       console.error('Failed to save contact info to localStorage', e);
     }
+    if (kvHydratedRef.current) kvPut(KV_KEY_CONTACT, contactInfo);
   }, [contactInfo]);
 
-  // Automatically save categories to localStorage on change
+  // ─── Persist categories to localStorage + KV on change ─────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
     } catch (e) {
       console.error('Failed to save categories to localStorage', e);
     }
+    if (kvHydratedRef.current) kvPut(KV_KEY_CATEGORIES, categories);
   }, [categories]);
 
-  // Automatically save activities to localStorage on change
+  // ─── Persist activities to localStorage + KV on change ─────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities));
     } catch (e) {
       console.error('Failed to save activities to localStorage', e);
     }
+    if (kvHydratedRef.current) kvPut(KV_KEY_GALLERY, activities);
   }, [activities]);
 
-  // Automatically save store locations to localStorage on change
+  // ─── Persist store locations to localStorage + KV on change ────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
     } catch (e) {
       console.error('Failed to save store locations to localStorage', e);
     }
+    if (kvHydratedRef.current) kvPut(KV_KEY_LOCATIONS, locations);
   }, [locations]);
 
-  // Automatically save products to localStorage on change
+  // ─── Persist products to localStorage + KV on change ───────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
     }
+    if (kvHydratedRef.current) kvPut(KV_KEY_PRODUCTS, products);
   }, [products]);
 
   const updateContactInfo = (newInfo: Partial<ContactSettings>) => {
@@ -363,6 +447,12 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (e) {
       console.error(e);
     }
+    // Reset KV so other devices also pick up defaults on next load
+    kvPut(KV_KEY_CONTACT,    DEFAULT_CONTACT_SETTINGS);
+    kvPut(KV_KEY_PRODUCTS,   INITIAL_PRODUCTS);
+    kvPut(KV_KEY_CATEGORIES, INITIAL_CATEGORIES);
+    kvPut(KV_KEY_GALLERY,    INITIAL_ACTIVITIES);
+    kvPut(KV_KEY_LOCATIONS,  INITIAL_LOCATIONS);
   };
 
   const buildWhatsAppUrl = (message: string) => {
