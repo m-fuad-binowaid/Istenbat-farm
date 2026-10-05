@@ -1,0 +1,9 @@
+﻿/index.php                  https://www.istenbat.com.sa/         301
+/en/index.php               https://www.istenbat.com.sa/         301
+/ar/zcomingsoon/*           https://www.istenbat.com.sa/         301
+/en/album.php*              https://www.istenbat.com.sa/         301
+/benefits.php               https://www.istenbat.com.sa/products 301
+/products.php               https://www.istenbat.com.sa/products 301
+/about.php                  https://www.istenbat.com.sa/about    301
+/portfolio.php              https://www.istenbat.com.sa/experience 301
+/*                          /index.html                          200

@@ -1,0 +1,6 @@
+﻿User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ar/zcomingsoon/
+
+Sitemap: https://www.istenbat.com.sa/sitemap.xml
