@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageRoute } from '../types';
 import { ABOUT_STORY, OFFICIAL_INFO, buildWhatsAppLink } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
@@ -16,10 +17,20 @@ import {
 } from 'lucide-react';
 
 interface AboutPageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const handleNav = (route: PageRoute) => {
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route === 'home' ? '/' : `/${route}`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const { language, isRTL } = useLanguage();
   const t = TRANSLATIONS[language];
 
@@ -113,14 +124,14 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
 
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
-                  onClick={() => onNavigate('experience')}
+                  onClick={() => handleNav('experience')}
                   className="px-6 py-3 bg-[#1C3322] hover:bg-[#274730] text-white text-xs sm:text-sm font-bold rounded-xl transition-colors flex items-center gap-2"
                 >
                   <Calendar className="w-4 h-4 text-emerald-300" />
                   <span>{t.about.exploreStayBtn}</span>
                 </button>
                 <button
-                  onClick={() => onNavigate('products')}
+                  onClick={() => handleNav('products')}
                   className="px-6 py-3 bg-white hover:bg-[#EAE2D2] text-[#1C3322] text-xs sm:text-sm font-bold rounded-xl border border-[#E7DECD] transition-colors"
                 >
                   {t.about.exploreProdBtn}

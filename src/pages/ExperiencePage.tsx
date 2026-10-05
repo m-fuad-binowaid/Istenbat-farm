@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 
 interface ExperiencePageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const ExperiencePage: React.FC<ExperiencePageProps> = () => {

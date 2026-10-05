@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { PageRoute } from '../types';
 import { OFFICIAL_INFO } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
@@ -8,7 +9,7 @@ import { getAssetUrl } from '../utils/assetPath';
 import { Phone, Mail, MapPin, Globe, ArrowUpRight, ShieldCheck, Clock } from 'lucide-react';
 
 interface FooterProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
@@ -17,7 +18,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const t = TRANSLATIONS[language];
 
   const handleNav = (route: PageRoute) => {
-    onNavigate(route);
+    if (onNavigate) {
+      onNavigate(route);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -27,12 +30,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-[#2D4C35]/60">
           {/* Col 1: Official Establishment & Parent Group */}
           <div className="flex flex-col gap-4">
-            <a
-              href="#/home"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNav('home');
-              }}
+            <Link
+              to="/"
+              onClick={() => handleNav('home')}
               className="flex items-center gap-2.5 md:gap-3 flex-shrink-0 group focus:outline-none"
               aria-label={language === 'ar' ? OFFICIAL_INFO.nameAr : OFFICIAL_INFO.nameEn}
             >
@@ -54,7 +54,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   {language === 'ar' ? OFFICIAL_INFO.parentGroupAr : OFFICIAL_INFO.parentGroupEn}
                 </span>
               </div>
-            </a>
+            </Link>
             <p className="text-xs sm:text-sm text-[#C8D9CB] leading-relaxed">
               {language === 'ar' ? OFFICIAL_INFO.missionStatementAr : OFFICIAL_INFO.missionStatementEn}
             </p>
@@ -73,52 +73,58 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </h3>
             <ul className="flex flex-col gap-2.5 text-sm text-[#C8D9CB]">
               <li>
-                <button
+                <Link
+                  to="/"
                   onClick={() => handleNav('home')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.home}</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
+                <Link
+                  to="/about"
                   onClick={() => handleNav('about')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.about}</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
+                <Link
+                  to="/products"
                   onClick={() => handleNav('products')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.products}</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
+                <Link
+                  to="/locations"
                   onClick={() => handleNav('locations')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.locations}</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
+                <Link
+                  to="/experience"
                   onClick={() => handleNav('experience')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.experience}</span>
-                </button>
+                </Link>
               </li>
               <li>
-                <button
+                <Link
+                  to="/contact"
                   onClick={() => handleNav('contact')}
                   className="hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span>{t.nav.contact}</span>
-                </button>
+                </Link>
               </li>
             </ul>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageRoute, Product, CategoryItem, ActivityCard, StoreLocation } from '../types';
 import { useFarmData } from '../context/FarmDataContext';
 import { getAssetUrl } from '../utils/assetPath';
@@ -114,10 +115,20 @@ const PRESET_ACTIVITY_MEDIA = [
 ];
 
 interface AdminPageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const handleNav = (route: PageRoute) => {
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route === 'home' ? '/' : `/${route}`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const {
     contactInfo,
     products,
@@ -1043,7 +1054,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="mt-6">
             <button
               type="button"
-              onClick={() => onNavigate('home')}
+              onClick={() => handleNav('home')}
               className="text-xs text-[#A1B8A7] hover:text-white underline cursor-pointer"
             >
               العودة إلى الموقع الرئيسي
@@ -1091,7 +1102,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               type="button"
-              onClick={() => onNavigate('locations')}
+              onClick={() => handleNav('locations')}
               className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>منافذ البيع</span>
@@ -1099,7 +1110,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             <button
               type="button"
-              onClick={() => onNavigate('experience')}
+              onClick={() => handleNav('experience')}
               className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>معاينة الأنشطة</span>
@@ -1107,7 +1118,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
             <button
               type="button"
-              onClick={() => onNavigate('products')}
+              onClick={() => handleNav('products')}
               className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-bold transition-colors items-center gap-1.5 cursor-pointer text-white"
             >
               <span>معاينة المتجر</span>

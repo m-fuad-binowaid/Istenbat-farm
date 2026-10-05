@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PageRoute } from './types';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { FarmDataProvider, useFarmData } from './context/FarmDataContext';
 import { TRANSLATIONS } from './data/translations';
@@ -14,48 +14,21 @@ import { ContactPage } from './pages/ContactPage';
 import { AdminPage } from './pages/AdminPage';
 import { MessageCircle, ArrowUp } from 'lucide-react';
 
-function AppContent() {
-  const [route, setRoute] = useState<PageRoute>('home');
+function ScrollToTopOnNavigation() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+
+  return null;
+}
+
+function MainLayout() {
   const [showBackToTop, setShowBackToTop] = useState(false);
   const { language, isRTL } = useLanguage();
   const { buildWhatsAppUrl } = useFarmData();
   const t = TRANSLATIONS[language];
-
-  // Sync with browser URL hash and path for friendly URL sharing and navigation
-  useEffect(() => {
-    const handleLocationChange = () => {
-      // 1. Check hash first (#/admin, #admin)
-      const hash = window.location.hash.replace(/^#\/?/, '').trim();
-      
-      // 2. Check path relative to base (e.g. /Istenbat-farm/admin -> admin)
-      const rawPath = window.location.pathname;
-      const base = (import.meta.env.BASE_URL || '/').replace(/^\/|\/$/g, '');
-      const pathSegments = rawPath.split('/').filter(Boolean);
-      
-      // On GitHub Pages (username.github.io/repo-name/...), the first segment is the repo name
-      if (window.location.hostname.endsWith('github.io') && pathSegments.length > 0) {
-        pathSegments.shift();
-      } else if (base && pathSegments.length > 0 && pathSegments[0].toLowerCase() === base.toLowerCase()) {
-        pathSegments.shift();
-      }
-      const directPath = pathSegments.join('/');
-
-      const target = hash || directPath;
-      if (['home', 'about', 'products', 'locations', 'experience', 'contact', 'admin'].includes(target)) {
-        setRoute(target as PageRoute);
-      } else {
-        setRoute('home');
-      }
-    };
-
-    handleLocationChange();
-    window.addEventListener('hashchange', handleLocationChange);
-    window.addEventListener('popstate', handleLocationChange);
-    return () => {
-      window.removeEventListener('hashchange', handleLocationChange);
-      window.removeEventListener('popstate', handleLocationChange);
-    };
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,20 +38,9 @@ function AppContent() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navigateTo = (newRoute: PageRoute) => {
-    setRoute(newRoute);
-    window.location.hash = `#/${newRoute}`;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // If in admin mode, render dedicated Admin view
-  if (route === 'admin') {
-    return <AdminPage onNavigate={navigateTo} />;
-  }
 
   return (
     <div
@@ -86,21 +48,18 @@ function AppContent() {
         isRTL ? 'font-tajawal' : 'font-sans'
       } selection:bg-[#1C3322] selection:text-[#F9F6F0] overflow-x-hidden`}
     >
+      <ScrollToTopOnNavigation />
+
       {/* Sticky Glass Navbar */}
-      <Navbar currentRoute={route} onNavigate={navigateTo} />
+      <Navbar />
 
       {/* Main Content View */}
       <main className="flex-1 w-full">
-        {route === 'home' && <HomePage onNavigate={navigateTo} />}
-        {route === 'about' && <AboutPage onNavigate={navigateTo} />}
-        {route === 'products' && <ProductsPage onNavigate={navigateTo} />}
-        {route === 'locations' && <LocationsPage onNavigate={navigateTo} />}
-        {route === 'experience' && <ExperiencePage onNavigate={navigateTo} />}
-        {route === 'contact' && <ContactPage onNavigate={navigateTo} />}
+        <Outlet />
       </main>
 
       {/* Footer */}
-      <Footer onNavigate={navigateTo} />
+      <Footer />
 
       {/* Floating Action Buttons: WhatsApp & Scroll to Top */}
       <div
@@ -112,7 +71,7 @@ function AppContent() {
           <button
             onClick={scrollToTop}
             aria-label={t.common.backToTop}
-            className="w-10 h-10 rounded-full bg-[#1C3322]/80 hover:bg-[#1C3322] text-white backdrop-blur-xs flex items-center justify-center shadow-md transition-all hover:scale-110"
+            className="w-10 h-10 rounded-full bg-[#1C3322]/80 hover:bg-[#1C3322] text-white backdrop-blur-xs flex items-center justify-center shadow-md transition-all hover:scale-110 cursor-pointer"
           >
             <ArrowUp className="w-4 h-4" />
           </button>
@@ -149,7 +108,21 @@ export default function App() {
   return (
     <LanguageProvider>
       <FarmDataProvider>
-        <AppContent />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/admin" element={<AdminPage />} />
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/home" element={<Navigate to="/" replace />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/locations" element={<LocationsPage />} />
+              <Route path="/experience" element={<ExperiencePage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </FarmDataProvider>
     </LanguageProvider>
   );

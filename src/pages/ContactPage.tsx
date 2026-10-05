@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 interface ContactPageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const ContactPage: React.FC<ContactPageProps> = () => {

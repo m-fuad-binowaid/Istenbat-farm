@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageRoute, StoreLocation } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
@@ -17,10 +18,20 @@ import {
 } from 'lucide-react';
 
 interface LocationsPageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const LocationsPage: React.FC<LocationsPageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const handleNav = (route: PageRoute) => {
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route === 'home' ? '/' : `/${route}`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const { language } = useLanguage();
   const { locations, contactInfo } = useFarmData();
 
@@ -349,7 +360,7 @@ export const LocationsPage: React.FC<LocationsPageProps> = ({ onNavigate }) => {
 
                 <button
                   type="button"
-                  onClick={() => onNavigate('experience')}
+                  onClick={() => handleNav('experience')}
                   className="px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer border border-white/15"
                 >
                   <Compass className="w-4 h-4 text-emerald-300" />

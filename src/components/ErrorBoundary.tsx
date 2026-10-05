@@ -46,8 +46,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
               onClick={() => {
-                window.location.hash = '#/home';
-                window.location.reload();
+                window.location.href = '/';
               }}
               style={{
                 backgroundColor: '#1C3322',

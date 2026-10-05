@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { PageRoute } from '../types';
 import {
   OFFICIAL_INFO,
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react';
 
 interface HomePageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 const HERO_SLIDES = [
@@ -61,6 +62,16 @@ const HERO_SLIDES = [
 ];
 
 export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
+  const navigate = useNavigate();
+  const handleNav = (route: PageRoute) => {
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route === 'home' ? '/' : `/${route}`);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [heroParallaxY, setHeroParallaxY] = useState(0);
@@ -182,7 +193,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           {/* Action CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
-              onClick={() => onNavigate('products')}
+              onClick={() => handleNav('products')}
               className="w-full sm:w-auto px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-[#122216] font-black text-base rounded-full shadow-lg hover:shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 transform active:scale-95"
             >
               <Sprout className="w-5 h-5 text-[#122216]" />
@@ -284,7 +295,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                     {language === 'ar' ? item.descriptionAr : item.descriptionEn}
                   </p>
                   <button
-                    onClick={() => onNavigate(item.id === 'fruits-veg' ? 'products' : 'experience')}
+                    onClick={() => handleNav(item.id === 'fruits-veg' ? 'products' : 'experience')}
                     className="inline-flex items-center gap-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
                   >
                     <span>{t.home.learnMoreBtn}</span>
@@ -375,7 +386,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               {t.home.docuBannerText}
             </span>
             <button
-              onClick={() => onNavigate('about')}
+              onClick={() => handleNav('about')}
               className="font-bold text-[#1C3322] hover:underline shrink-0"
             >
               {t.home.readStoryBtn}
@@ -495,7 +506,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
           <div className="mt-8 text-center">
             <button
               type="button"
-              onClick={() => onNavigate('locations')}
+              onClick={() => handleNav('locations')}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-[#F9F6F0] text-[#1C3322] font-black text-xs sm:text-sm border border-[#E7DECD] shadow-xs hover:shadow-md transition-all cursor-pointer"
             >
               <Store className="w-4 h-4 text-emerald-700" />
@@ -613,7 +624,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             </a>
 
             <button
-              onClick={() => onNavigate('contact')}
+              onClick={() => handleNav('contact')}
               className="w-full sm:w-auto px-7 py-4 bg-transparent hover:bg-white/10 text-white font-bold text-sm rounded-full border border-white/30 transition-all cursor-pointer"
             >
               {t.home.ctaContactBtn}

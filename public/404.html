@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>استنبات | ISTENBAT - المزرعة الحرفية العضوية والسياحة الريفية بالدلم</title>
     <script>
-      // GitHub Pages SPA redirect script:
-      // Converts deep paths (e.g. /Istenbat-farm/admin or /Istenbat-farm/products) into hash routes
-      // so the SPA loads smoothly without 404 error on page refresh.
       (function() {
         var l = window.location;
         var pathSegments = l.pathname.split('/').filter(Boolean);
+        var isGitHubPages = l.hostname.endsWith('github.io');
         var repoName = pathSegments[0] || 'Istenbat-farm';
-        var subRoute = pathSegments.slice(1).join('/');
+        var subRoute = isGitHubPages ? pathSegments.slice(1).join('/') : pathSegments.join('/');
+        var basePath = isGitHubPages ? ('/' + repoName) : '';
 
-        var redirectUrl = l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-          '/' + repoName + '/#/' + (subRoute || 'home') +
-          (l.search ? l.search : '');
-
-        window.location.replace(redirectUrl);
+        var targetPath = basePath + '/' + (subRoute || '');
+        if (targetPath === l.pathname) {
+          window.location.replace(basePath || '/');
+        } else {
+          window.location.replace(targetPath + (l.search ? l.search : ''));
+        }
       })();
     </script>
   </head>

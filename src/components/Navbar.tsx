@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { PageRoute } from '../types';
 import { OFFICIAL_INFO } from '../data/content';
 import { TRANSLATIONS } from '../data/translations';
@@ -8,16 +9,24 @@ import { getAssetUrl } from '../utils/assetPath';
 import { Menu, X, Phone, Calendar, ArrowLeft, ArrowRight, Globe } from 'lucide-react';
 
 interface NavbarProps {
-  currentRoute: PageRoute;
-  onNavigate: (route: PageRoute) => void;
+  currentRoute?: PageRoute;
+  onNavigate?: (route: PageRoute) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, onNavigate }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { language, toggleLanguage, isRTL } = useLanguage();
   const { contactInfo } = useFarmData();
   const t = TRANSLATIONS[language];
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const rawPath = location.pathname.replace(/^\/|\/$/g, '').toLowerCase() || 'home';
+  const detectedRoute = (['home', 'about', 'products', 'locations', 'experience', 'contact', 'admin'].includes(rawPath)
+    ? rawPath
+    : 'home') as PageRoute;
+  const currentRoute = propCurrentRoute || detectedRoute;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -37,27 +46,35 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
   ];
 
   const handleLinkClick = (route: PageRoute) => {
-    onNavigate(route);
+    if (onNavigate) {
+      onNavigate(route);
+    } else {
+      navigate(route === 'home' ? '/' : `/${route}`);
+    }
     setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleVisitCtaClick = () => {
     setMobileMenuOpen(false);
-    if (currentRoute === 'home') {
+    if (location.pathname === '/' || location.pathname === '/home') {
       const el = document.getElementById('visit-inquiry');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
         return;
       }
-    } else if (currentRoute === 'experience') {
+    } else if (location.pathname === '/experience') {
       const el = document.getElementById('booking-section');
       if (el) {
         el.scrollIntoView({ behavior: 'smooth' });
         return;
       }
     }
-    onNavigate('experience');
+    if (onNavigate) {
+      onNavigate('experience');
+    } else {
+      navigate('/experience');
+    }
     setTimeout(() => {
       const el = document.getElementById('booking-section');
       if (el) {
@@ -114,11 +131,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           {/* Brand Logo Lockup (Icon + Native Typography) */}
-          <a
-            href="#/home"
-            onClick={(e) => {
-              e.preventDefault();
-              handleLinkClick('home');
+          <Link
+            to="/"
+            onClick={() => {
+              setMobileMenuOpen(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex items-center gap-2.5 md:gap-3 flex-shrink-0 group focus:outline-none"
             aria-label={t.nav.brandTitle}
@@ -155,16 +172,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
                 </>
               )}
             </div>
-          </a>
+          </Link>
 
           {/* Desktop Navigation Links */}
           <div className="hidden lg:flex items-center gap-1 bg-[#F4EFE6]/80 p-1.5 rounded-full border border-[#E7DECD]">
             {navItems.map((item) => {
               const isActive = currentRoute === item.id;
+              const toPath = item.id === 'home' ? '/' : `/${item.id}`;
               return (
-                <button
+                <Link
                   key={item.id}
-                  onClick={() => handleLinkClick(item.id)}
+                  to={toPath}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   className={`px-4 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
                     isActive
                       ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs'
@@ -172,7 +191,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
                   }`}
                 >
                   {item.label}
-                </button>
+                </Link>
               );
             })}
           </div>
@@ -226,10 +245,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
 
             {navItems.map((item) => {
               const isActive = currentRoute === item.id;
+              const toPath = item.id === 'home' ? '/' : `/${item.id}`;
               return (
-                <button
+                <Link
                   key={item.id}
-                  onClick={() => handleLinkClick(item.id)}
+                  to={toPath}
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-start font-bold text-base transition-colors ${
                     isActive
                       ? 'bg-[#1C3322] text-[#F9F6F0]'
@@ -242,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute, onNavigate }) => {
                   ) : (
                     <ArrowRight className="w-4 h-4 opacity-70" />
                   )}
-                </button>
+                </Link>
               );
             })}
             <div className="pt-4 mt-2 border-t border-[#E7DECD] flex flex-col gap-2 text-sm text-[#50452d]">

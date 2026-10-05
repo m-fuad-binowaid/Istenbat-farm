@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 
 interface ProductsPageProps {
-  onNavigate: (route: PageRoute) => void;
+  onNavigate?: (route: PageRoute) => void;
 }
 
 export const ProductsPage: React.FC<ProductsPageProps> = () => {
