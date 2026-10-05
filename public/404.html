@@ -1,29 +1,43 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-PB5JMQ5P89"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-PB5JMQ5P89');
+      gtag('config', 'AW-11435525184');
+    </script>
+    <!-- Canonical & Core SEO -->
+    <link rel="canonical" href="https://www.istenbat.com.sa/" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>استنبات | ISTENBAT - المزرعة الحرفية العضوية والسياحة الريفية بالدلم</title>
-    <script>
-      (function() {
-        var l = window.location;
-        var pathSegments = l.pathname.split('/').filter(Boolean);
-        var isGitHubPages = l.hostname.endsWith('github.io');
-        var repoName = pathSegments[0] || 'Istenbat-farm';
-        var subRoute = isGitHubPages ? pathSegments.slice(1).join('/') : pathSegments.join('/');
-        var basePath = isGitHubPages ? ('/' + repoName) : '';
-
-        var targetPath = basePath + '/' + (subRoute || '');
-        if (targetPath === l.pathname) {
-          window.location.replace(basePath || '/');
-        } else {
-          window.location.replace(targetPath + (l.search ? l.search : ''));
-        }
-      })();
-    </script>
+    <title>مزرعة بيت استنبات | فطر محاري، أجبان حرفية، وبراعم عضوية فاخرة بالدلم</title>
+    <meta name="description" content="مزارع استنبات بالدلم: إنتاج فاخر للفطر المحاري العضوي، الأجبان الحرفية الطبيعية، والمايكروجرين الطازج. توريد للمطاعم والفنادق وتجارب سياحية ريفية." />
+    <meta name="keywords" content="استنبات, مزرعة استنبات, فطر محاري, مزارع الدلم, أجبان حرفية, مايكروجرين, سياحة زراعية" />
+    <!-- Open Graph -->
+    <meta property="og:title" content="مزرعة بيت استنبات | إنتاج عضوي وتجارب ريفية فاخرة بالدلم" />
+    <meta property="og:description" content="خيرات المزرعة الطبيعية: فطر محاري، أجبان طبيعية، وبراعم طازجة مع جولات سياحية ومناحل." />
+    <meta property="og:url" content="https://www.istenbat.com.sa/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://www.istenbat.com.sa/assets/flora11.jpg" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="مزرعة بيت استنبات | فطر محاري وأجبان حرفية بالدلم" />
+    <meta name="twitter:description" content="مزارع استنبات بالدلم: فطر محاري عضوي، أجبان حرفية، ومايكروجرين طازج." />
+    <meta name="twitter:image" content="https://www.istenbat.com.sa/assets/flora11.jpg" />
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Readex+Pro:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
   </head>
-  <body style="font-family: sans-serif; text-align: center; padding: 40px; background-color: #F9F6F0; color: #1C3322;">
-    <p>جاري تحويلك إلى مزرعة بيت الاستنبات...</p>
-    <p style="font-size: 13px; color: #666;">Redirecting to Istenbat Farm...</p>
+  <body class="bg-[#F9F6F0] text-[#2B2821] font-tajawal antialiased selection:bg-[#1C3322] selection:text-[#F9F6F0]">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
