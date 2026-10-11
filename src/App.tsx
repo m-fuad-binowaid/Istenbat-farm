@@ -6,8 +6,7 @@ import { TRANSLATIONS } from './data/translations';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { MessageCircle, ArrowUp } from 'lucide-react';
-
-const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+import { HomePage } from './pages/HomePage';
 const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
 const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ default: m.ProductsPage })));
 const LocationsPage = lazy(() => import('./pages/LocationsPage').then((m) => ({ default: m.LocationsPage })));

@@ -150,9 +150,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
             transform: `translate3d(0, ${heroParallaxY}px, 0) scale(1.08)`,
           }}
         >
-          {HERO_SLIDES.map((slide, index) => {
+          {/* Plain Static Hero Banner for Immediate LCP Paint */}
+          <img
+            src="/assets/hero-banner.webp"
+            alt={language === 'ar' ? HERO_SLIDES[0].altAr : HERO_SLIDES[0].altEn}
+            width="721"
+            height="480"
+            fetchPriority="high"
+            decoding="async"
+            className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
+              currentSlide === 0 ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+          {HERO_SLIDES.slice(1).map((slide, i) => {
+            const index = i + 1;
             const isActive = index === currentSlide;
-            const isFirst = index === 0;
             return (
               <img
                 key={slide.id}
@@ -160,9 +172,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 alt={language === 'ar' ? slide.altAr : slide.altEn}
                 width="721"
                 height="480"
-                referrerPolicy="no-referrer"
-                {...(isFirst ? { fetchPriority: 'high' } : { loading: 'lazy', decoding: 'async' })}
-                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out will-change-[opacity] ${
+                loading="lazy"
+                decoding="async"
+                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
                   isActive ? 'opacity-100' : 'opacity-0'
                 }`}
               />
