@@ -40,6 +40,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <img
                   src={getAssetUrl('assets/Untitled design1234_2.jpg')}
                   alt="شعار استنبات"
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-contain mix-blend-multiply"
                 />
               </div>

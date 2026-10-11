@@ -1,18 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { FarmDataProvider, useFarmData } from './context/FarmDataContext';
 import { TRANSLATIONS } from './data/translations';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-import { HomePage } from './pages/HomePage';
-import { AboutPage } from './pages/AboutPage';
-import { ProductsPage } from './pages/ProductsPage';
-import { ExperiencePage } from './pages/ExperiencePage';
-import { LocationsPage } from './pages/LocationsPage';
-import { ContactPage } from './pages/ContactPage';
-import { AdminPage } from './pages/AdminPage';
 import { MessageCircle, ArrowUp } from 'lucide-react';
+
+const HomePage = lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
+const AboutPage = lazy(() => import('./pages/AboutPage').then((m) => ({ default: m.AboutPage })));
+const ProductsPage = lazy(() => import('./pages/ProductsPage').then((m) => ({ default: m.ProductsPage })));
+const LocationsPage = lazy(() => import('./pages/LocationsPage').then((m) => ({ default: m.LocationsPage })));
+const ExperiencePage = lazy(() => import('./pages/ExperiencePage').then((m) => ({ default: m.ExperiencePage })));
+const ContactPage = lazy(() => import('./pages/ContactPage').then((m) => ({ default: m.ContactPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage').then((m) => ({ default: m.AdminPage })));
 
 function ScrollToTopOnNavigation() {
   const { pathname } = useLocation();
@@ -109,19 +110,21 @@ export default function App() {
     <LanguageProvider>
       <FarmDataProvider>
         <BrowserRouter>
-          <Routes>
-            <Route path="/admin" element={<AdminPage />} />
-            <Route element={<MainLayout />}>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/home" element={<Navigate to="/" replace />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/products" element={<ProductsPage />} />
-              <Route path="/locations" element={<LocationsPage />} />
-              <Route path="/experience" element={<ExperiencePage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Route>
-          </Routes>
+          <Suspense fallback={<div className="min-h-screen bg-[#FDFBF7]" />}>
+            <Routes>
+              <Route path="/admin" element={<AdminPage />} />
+              <Route element={<MainLayout />}>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/home" element={<Navigate to="/" replace />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/products" element={<ProductsPage />} />
+                <Route path="/locations" element={<LocationsPage />} />
+                <Route path="/experience" element={<ExperiencePage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Route>
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </FarmDataProvider>
     </LanguageProvider>

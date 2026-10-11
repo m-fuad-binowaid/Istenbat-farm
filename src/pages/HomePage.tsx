@@ -43,19 +43,19 @@ interface HomePageProps {
 const HERO_SLIDES = [
   {
     id: 'sunflowers',
-    src: '/assets/hero-sunflowers.jpg',
+    src: '/assets/hero-banner.webp',
     altAr: 'حقول عباد الشمس والزهور - مزرعة بيت الاستنبات',
     altEn: 'Sunflowers and flower fields - Istenbat House Farm',
   },
   {
     id: 'camping',
-    src: '/assets/hero-camping.jpg',
+    src: '/assets/hero-camping.webp',
     altAr: 'المخيم والجلسة الريفية - مزرعة بيت الاستنبات',
     altEn: 'Rural camping and farm stay - Istenbat House Farm',
   },
   {
     id: 'crops',
-    src: '/assets/hero-crops.jpg',
+    src: '/assets/hero-crops.webp',
     altAr: 'الحقول الخضراء ومحاصيل الدلم',
     altEn: 'Green crop fields and Al-Dilam harvest - Istenbat House Farm',
   },
@@ -158,6 +158,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 key={slide.id}
                 src={getAssetUrl(slide.src)}
                 alt={language === 'ar' ? slide.altAr : slide.altEn}
+                width="721"
+                height="480"
                 referrerPolicy="no-referrer"
                 {...(isFirst ? { fetchPriority: 'high' } : { loading: 'lazy', decoding: 'async' })}
                 className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out will-change-[opacity] ${
@@ -283,6 +285,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                   <ImageWithFallback
                     src={item.image}
                     alt={language === 'ar' ? item.titleAr : item.titleEn}
+                    width="400"
+                    height="224"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

@@ -31,10 +31,15 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
 
   const resolvedSrc = getAssetUrl(src);
 
+  const defaultWidth = isLogo ? 48 : 400;
+  const defaultHeight = isLogo ? 48 : 300;
+
   return (
     <img
       src={resolvedSrc}
       alt={alt}
+      width={props.width ?? defaultWidth}
+      height={props.height ?? defaultHeight}
       loading="lazy"
       decoding="async"
       onError={() => setHasError(true)}

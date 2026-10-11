@@ -53,6 +53,10 @@ export const StoreLogo: React.FC<StoreLogoProps> = ({
         <img
           src={getAssetUrl(logoUrl)}
           alt={storeName}
+          width="48"
+          height="48"
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-contain"
           onError={(e) => {
             // Fallback to initial icon if image fails

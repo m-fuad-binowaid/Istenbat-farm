@@ -206,6 +206,8 @@ export const FarmVisualCatalog: React.FC = () => {
                   <img
                     src={photo.src}
                     alt={language === 'ar' ? photo.altAr : photo.altEn}
+                    width="300"
+                    height="225"
                     loading="lazy"
                     decoding="async"
                     referrerPolicy="no-referrer"
@@ -278,6 +280,8 @@ export const FarmVisualCatalog: React.FC = () => {
                   ? FARM_GALLERY_PHOTOS[selectedPhotoIndex].altAr
                   : FARM_GALLERY_PHOTOS[selectedPhotoIndex].altEn
               }
+              width="1200"
+              height="800"
               referrerPolicy="no-referrer"
               className="max-h-[88vh] max-w-[92vw] object-contain rounded-xl md:rounded-2xl shadow-2xl transition-all duration-300 select-none"
             />

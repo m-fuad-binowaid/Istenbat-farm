@@ -143,6 +143,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, 
             <img
               src={getAssetUrl('logo.png')}
               alt="شعار مزرعة بيت الاستنبات - Istenbat Farm"
+              width="48"
+              height="48"
               className="h-10 md:h-12 w-auto object-contain mix-blend-multiply transition-transform group-hover:scale-105 flex-shrink-0"
             />
             <div className="flex flex-col text-start justify-center select-none leading-none flex-shrink-0">
