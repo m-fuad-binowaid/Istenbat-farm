@@ -87,9 +87,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
                     <Sprout className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold">
+                    <p className="text-sm font-bold">
                       {language === 'ar' ? OFFICIAL_INFO.nameAr : OFFICIAL_INFO.nameEn}
-                    </h4>
+                    </p>
                     <p className="text-xs text-[#C8D9CB]">
                       {language === 'ar' ? OFFICIAL_INFO.locationAr : OFFICIAL_INFO.locationEn}
                     </p>
@@ -211,9 +211,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
                 <Award className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-[#1C3322] text-base mb-1">
+                <h3 className="font-bold text-[#1C3322] text-base mb-1">
                   {t.about.sofaCardTitle}
-                </h4>
+                </h3>
                 <p className="text-xs text-[#50452d] leading-relaxed">
                   {t.about.sofaCardDesc}
                 </p>
@@ -225,9 +225,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <div>
-                <h4 className="font-bold text-[#1C3322] text-base mb-1">
+                <h3 className="font-bold text-[#1C3322] text-base mb-1">
                   {t.about.almudhanCardTitle}
-                </h4>
+                </h3>
                 <p className="text-xs text-[#50452d] leading-relaxed">
                   {t.about.almudhanCardDesc}
                 </p>

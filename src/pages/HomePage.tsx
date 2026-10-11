@@ -74,6 +74,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [sliderMounted, setSliderMounted] = useState(false);
   const [heroParallaxY, setHeroParallaxY] = useState(0);
   const { language, isRTL } = useLanguage();
   const { contactInfo, buildWhatsAppUrl, locations } = useFarmData();
@@ -118,11 +119,20 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
   }, []);
 
   useEffect(() => {
+    // Mount background slider lazily after initial page render (saving 655 KiB on mobile)
+    const initTimer = setTimeout(() => {
+      setSliderMounted(true);
+    }, 4000);
+    return () => clearTimeout(initTimer);
+  }, []);
+
+  useEffect(() => {
+    if (!sliderMounted) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [sliderMounted]);
 
   const getBadgeIcon = (id: string) => {
     switch (id) {
@@ -162,24 +172,25 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
               currentSlide === 0 ? 'opacity-100' : 'opacity-0'
             }`}
           />
-          {HERO_SLIDES.slice(1).map((slide, i) => {
-            const index = i + 1;
-            const isActive = index === currentSlide;
-            return (
-              <img
-                key={slide.id}
-                src={getAssetUrl(slide.src)}
-                alt={language === 'ar' ? slide.altAr : slide.altEn}
-                width="721"
-                height="480"
-                loading="lazy"
-                decoding="async"
-                className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
-                  isActive ? 'opacity-100' : 'opacity-0'
-                }`}
-              />
-            );
-          })}
+          {sliderMounted &&
+            HERO_SLIDES.slice(1).map((slide, i) => {
+              const index = i + 1;
+              const isActive = index === currentSlide;
+              return (
+                <img
+                  key={slide.id}
+                  src={getAssetUrl(slide.src)}
+                  alt={language === 'ar' ? slide.altAr : slide.altEn}
+                  width="721"
+                  height="480"
+                  loading="lazy"
+                  decoding="async"
+                  className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out ${
+                    isActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              );
+            })}
         </div>
 
         {/* Contrast & Readability Gradient (Crucial) */}
@@ -255,21 +266,28 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         </div>
 
         {/* Slide Navigation Indicators */}
-        <div className="absolute bottom-5 sm:bottom-7 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5">
+        <div className="absolute bottom-5 sm:bottom-7 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1">
           {HERO_SLIDES.map((slide, index) => {
             const isActive = index === currentSlide;
             return (
               <button
                 key={slide.id}
                 type="button"
-                onClick={() => setCurrentSlide(index)}
+                onClick={() => {
+                  setSliderMounted(true);
+                  setCurrentSlide(index);
+                }}
                 aria-label={`انتقل إلى الشريحة ${index + 1}`}
-                className={`transition-all duration-300 rounded-full focus:outline-none ${
-                  isActive
-                    ? 'w-7 sm:w-8 h-2.5 bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]'
-                    : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
-                }`}
-              />
+                className="min-h-[44px] min-w-[44px] p-2 flex items-center justify-center focus:outline-none cursor-pointer"
+              >
+                <span
+                  className={`transition-all duration-300 rounded-full block ${
+                    isActive
+                      ? 'w-7 sm:w-8 h-2.5 bg-white shadow-[0_0_12px_rgba(255,255,255,0.8)]'
+                      : 'w-2.5 h-2.5 bg-white/40 hover:bg-white/70'
+                  }`}
+                />
+              </button>
             );
           })}
         </div>
@@ -589,9 +607,9 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
 
                 {/* Footer: Author & Google Maps Verified Badge */}
                 <div className="border-t border-[#2D4C35] pt-4 mt-auto">
-                  <h4 className="text-sm font-bold text-white tracking-wide mb-1">
+                  <h3 className="text-sm font-bold text-white tracking-wide mb-1">
                     {review.author}
-                  </h4>
+                  </h3>
                   <span className="inline-flex items-center text-xs text-emerald-400/90 font-medium">
                     {language === 'ar' ? review.badgeAr : review.badgeEn}
                   </span>

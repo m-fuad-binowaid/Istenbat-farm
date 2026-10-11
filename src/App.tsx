@@ -71,7 +71,7 @@ function MainLayout() {
           <button
             onClick={scrollToTop}
             aria-label={t.common.backToTop}
-            className="w-10 h-10 rounded-full bg-[#1C3322]/80 hover:bg-[#1C3322] text-white backdrop-blur-xs flex items-center justify-center shadow-md transition-all hover:scale-110 cursor-pointer"
+            className="w-11 h-11 min-h-[44px] min-w-[44px] rounded-full bg-[#1C3322]/80 hover:bg-[#1C3322] text-white backdrop-blur-xs flex items-center justify-center shadow-md transition-all hover:scale-110 cursor-pointer"
           >
             <ArrowUp className="w-4 h-4" />
           </button>

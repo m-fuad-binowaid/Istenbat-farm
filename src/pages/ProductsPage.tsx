@@ -69,6 +69,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
 
       {/* Category Filter Tabs & Catalog Section */}
       <section className="py-14 bg-[#F9F6F0]">
+        <h2 className="sr-only">{t.products.headerTitle}</h2>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Tabs Filter Bar */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-10 pb-6 border-b border-[#E7DECD]">
@@ -84,7 +85,7 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                    className={`px-4 sm:px-5 py-2.5 min-h-[44px] rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                       isActive
                         ? 'bg-[#1C3322] text-[#F9F6F0] shadow-xs ring-2 ring-emerald-600/30'
                         : 'bg-white text-[#2B2821] hover:bg-[#EAE2D2] border border-[#E7DECD]'

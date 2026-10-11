@@ -203,7 +203,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, 
             {/* Language Switcher */}
             <button
               onClick={toggleLanguage}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-white hover:bg-[#F4EFE6] text-[#1C3322] text-xs font-bold border border-[#E7DECD] shadow-xs transition-colors shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-full bg-white hover:bg-[#F4EFE6] text-[#1C3322] text-xs font-bold border border-[#E7DECD] shadow-xs transition-colors shrink-0"
               aria-label={t.nav.switchLangAria}
               title={t.nav.switchLangAria}
             >
@@ -214,7 +214,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, 
             {/* Farm Visit CTA Button (Hidden on Mobile < md, visible and single-line on desktop) */}
             <button
               onClick={handleVisitCtaClick}
-              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 bg-[#1C3322] hover:bg-[#274730] text-[#F9F6F0] text-sm font-bold rounded-full shadow-md hover:shadow-lg transition-all transform active:scale-95 whitespace-nowrap shrink-0"
+              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] bg-[#1C3322] hover:bg-[#274730] text-[#F9F6F0] text-sm font-bold rounded-full shadow-md hover:shadow-lg transition-all transform active:scale-95 whitespace-nowrap shrink-0"
             >
               <Calendar className="w-4 h-4 text-emerald-300 shrink-0" />
               <span>{t.nav.bookCta}</span>
@@ -223,7 +223,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, 
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-[#1C3322] hover:bg-[#F4EFE6] border border-[#E7DECD] transition-colors shrink-0"
+              className="lg:hidden p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-[#1C3322] hover:bg-[#F4EFE6] border border-[#E7DECD] transition-colors shrink-0"
               aria-label={t.nav.menuAria}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -282,7 +282,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentRoute: propCurrentRoute, 
                   {contactInfo.mobile || contactInfo.phone || '0501207704'}
                 </a>
               </div>
-              <div className="text-xs text-[#8C7A5B]">
+              <div className="text-xs text-stone-700 font-medium">
                 {language === 'ar' ? OFFICIAL_INFO.workingHoursAr : OFFICIAL_INFO.workingHoursEn}
               </div>
             </div>
