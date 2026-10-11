@@ -35,6 +35,8 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
     <img
       src={resolvedSrc}
       alt={alt}
+      loading="lazy"
+      decoding="async"
       onError={() => setHasError(true)}
       className={`${isLogo ? 'mix-blend-multiply object-contain' : ''} ${className}`}
       {...props}

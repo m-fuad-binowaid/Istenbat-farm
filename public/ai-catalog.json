@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0",
+  "name": "مزرعة بيت استنبات",
+  "description": "منتجات زراعية عضوية وسياحة ريفية بالدلم",
+  "url": "https://www.istenbat.com.sa",
+  "products": [
+    {
+      "id": "baladi-chicken",
+      "name": "دجاج بلدي طازج حر المرعى",
+      "category": "الدواجن",
+      "url": "https://www.istenbat.com.sa/products"
+    },
+    {
+      "id": "oyster-mushrooms",
+      "name": "فطر المحار العضوي الطازج",
+      "category": "الإنتاج العضوي",
+      "url": "https://www.istenbat.com.sa/products"
+    },
+    {
+      "id": "farm-cheeses",
+      "name": "أجبان مزارع الدلم الطبيعية الفاخرة",
+      "category": "الألبان والأجبان",
+      "url": "https://www.istenbat.com.sa/products"
+    }
+  ]
+}

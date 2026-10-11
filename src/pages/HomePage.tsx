@@ -152,12 +152,14 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
         >
           {HERO_SLIDES.map((slide, index) => {
             const isActive = index === currentSlide;
+            const isFirst = index === 0;
             return (
               <img
                 key={slide.id}
                 src={getAssetUrl(slide.src)}
                 alt={language === 'ar' ? slide.altAr : slide.altEn}
                 referrerPolicy="no-referrer"
+                {...(isFirst ? { fetchPriority: 'high' } : { loading: 'lazy', decoding: 'async' })}
                 className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ease-in-out will-change-[opacity] ${
                   isActive ? 'opacity-100' : 'opacity-0'
                 }`}
