@@ -6,7 +6,7 @@ import {defineConfig, Plugin} from 'vite';
 
 const LOCAL_BUSINESS_SCHEMA = {
   '@context': 'https://schema.org',
-  '@type': ['LocalBusiness', 'Farm'],
+  '@type': 'LocalBusiness',
   '@id': 'https://www.istenbat.com.sa/#farm',
   name: 'مؤسسة مزرعة بيت الاستنبات للزراعة',
   alternateName: 'Istenbat House Farm',
