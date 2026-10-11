@@ -53,6 +53,7 @@ const PRODUCTS_SCHEMA = {
       item: {
         '@type': 'Product',
         name: 'دجاج بلدي طازج حر المرعى',
+        image: 'https://www.istenbat.com.sa/assets/prod18a.png',
         description: 'دجاج بلدي طازج ومربى في مراعي حرة طبيعية بدون هرمونات أو مضادات حيوية في مزارع الدلم.',
         brand: {
           '@type': 'Brand',
@@ -60,6 +61,7 @@ const PRODUCTS_SCHEMA = {
         },
         offers: {
           '@type': 'Offer',
+          price: '35.00',
           priceCurrency: 'SAR',
           availability: 'https://schema.org/InStock',
           url: 'https://www.istenbat.com.sa/products',
@@ -72,6 +74,7 @@ const PRODUCTS_SCHEMA = {
       item: {
         '@type': 'Product',
         name: 'فطر المحار العضوي الطازج',
+        image: 'https://www.istenbat.com.sa/assets/mushroom-placeholder.jpg',
         description: 'فطر محاري عضوي طازج قطفة يومية غني بالبروتين والمعادن من بيوت الاستنبات بالدلم.',
         brand: {
           '@type': 'Brand',
@@ -79,6 +82,7 @@ const PRODUCTS_SCHEMA = {
         },
         offers: {
           '@type': 'Offer',
+          price: '25.00',
           priceCurrency: 'SAR',
           availability: 'https://schema.org/InStock',
           url: 'https://www.istenbat.com.sa/products',
@@ -91,6 +95,7 @@ const PRODUCTS_SCHEMA = {
       item: {
         '@type': 'Product',
         name: 'أجبان مزارع الدلم الطبيعية الفاخرة',
+        image: 'https://www.istenbat.com.sa/assets/dairy-halloumi.jpg',
         description: 'أجبان حرفية طبيعية طازجة من حليب الأبقار والأغنام البلدية (حلوم، عكاوي، وجبن بلدي طازج).',
         brand: {
           '@type': 'Brand',
@@ -98,6 +103,7 @@ const PRODUCTS_SCHEMA = {
         },
         offers: {
           '@type': 'Offer',
+          price: '30.00',
           priceCurrency: 'SAR',
           availability: 'https://schema.org/InStock',
           url: 'https://www.istenbat.com.sa/products',
@@ -110,6 +116,7 @@ const PRODUCTS_SCHEMA = {
       item: {
         '@type': 'Product',
         name: 'عسل النحل الطبيعي الخام',
+        image: 'https://www.istenbat.com.sa/assets/prod01a.png',
         description: 'عسل سدر وزهور برية بلدي طبيعي 100% مستخرج من مناحل مزرعة بيت الاستنبات.',
         brand: {
           '@type': 'Brand',
@@ -117,6 +124,7 @@ const PRODUCTS_SCHEMA = {
         },
         offers: {
           '@type': 'Offer',
+          price: '95.00',
           priceCurrency: 'SAR',
           availability: 'https://schema.org/InStock',
           url: 'https://www.istenbat.com.sa/products',
@@ -129,6 +137,7 @@ const PRODUCTS_SCHEMA = {
       item: {
         '@type': 'Product',
         name: 'أوراق المورينجا العضوية',
+        image: 'https://www.istenbat.com.sa/assets/flora11.jpg',
         description: 'أوراق وزهور المورينجا العضوية المجففة والطازجة المزروعة بأعلى معايير الاستدامة بالدلم.',
         brand: {
           '@type': 'Brand',
@@ -136,6 +145,7 @@ const PRODUCTS_SCHEMA = {
         },
         offers: {
           '@type': 'Offer',
+          price: '20.00',
           priceCurrency: 'SAR',
           availability: 'https://schema.org/InStock',
           url: 'https://www.istenbat.com.sa/products',
