@@ -24,12 +24,9 @@ export const GoogleReviewBridge: React.FC<GoogleReviewBridgeProps> = ({
   const [showToast, setShowToast] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
 
-  // Google Maps write-review direct link
+  // Verified Google Maps link for Istenbat Farmstead
   const GOOGLE_REVIEW_URL =
-    customReviewUrl ||
-    (placeId && placeId !== 'YOUR_PLACE_ID'
-      ? `https://search.google.com/local/writereview?placeid=${placeId}`
-      : 'https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID');
+    customReviewUrl || 'https://maps.app.goo.gl/iiJmB7yHZx4ieqHj8';
 
   const ratingDescriptions: Record<number, { ar: string; en: string }> = {
     5: { ar: 'ممتاز جداً 🌟🌟🌟🌟🌟 - ننصح به بشدة', en: 'Exceptional 🌟🌟🌟🌟🌟 - Highly Recommended' },
@@ -74,14 +71,14 @@ export const GoogleReviewBridge: React.FC<GoogleReviewBridgeProps> = ({
       setIsCopied(true);
       setToastMessage(
         language === 'ar'
-          ? 'تم نسخ تقييمك! ألصقه الآن واضغط نشر في قوقل ماب 🌟'
-          : 'Your review was copied! Paste it now and click post on Google Maps 🌟'
+          ? 'تم نسخ تقييمك! جارٍ نقلك إلى خرائط Google للصقه واعتماده 🌟'
+          : 'Your review was copied! Redirecting to Google Maps to paste and confirm 🌟'
       );
     } else {
       setIsCopied(false);
       setToastMessage(
         language === 'ar'
-          ? 'شكراً لاختيارك التقييم! جاري توجيهك لخرائط قوقل 🌟'
+          ? 'شكراً لاختيارك التقييم! جارٍ نقلك إلى خرائط Google 🌟'
           : 'Thank you for your rating! Redirecting to Google Maps 🌟'
       );
     }
