@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useFarmData } from '../context/FarmDataContext';
 import { ImageWithFallback } from '../components/ImageWithFallback';
 import { VideoModal } from '../components/VideoModal';
+import { GoogleReviewBridge } from '../components/GoogleReviewBridge';
 import {
   ShieldCheck,
   Package,
@@ -272,6 +273,13 @@ export const ProductsPage: React.FC<ProductsPageProps> = () => {
               );
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Interactive Google Review Bridge Section */}
+      <section className="py-12 sm:py-16 bg-[#F4EFE6] border-t border-[#E7DECD]">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <GoogleReviewBridge />
         </div>
       </section>
 

@@ -40,6 +40,80 @@ const LOCAL_BUSINESS_SCHEMA = {
   ],
 };
 
+const PRODUCT_AGGREGATE_RATING = {
+  '@type': 'AggregateRating',
+  ratingValue: '4.9',
+  reviewCount: '36',
+  bestRating: '5',
+  worstRating: '1',
+};
+
+const PRODUCT_REVIEWS = [
+  {
+    '@type': 'Review',
+    author: {
+      '@type': 'Person',
+      name: 'أبو عبدالله (عميل موثق)',
+    },
+    datePublished: '2026-09-20',
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: '5',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    reviewBody: 'منتجات طازجة وفاخرة مباشرة من مزارع الدلم، وتغليف وتوصيل مبرد ممتاز.',
+  },
+];
+
+const MERCHANT_RETURN_POLICY = {
+  '@type': 'MerchantReturnPolicy',
+  applicableCountry: 'SA',
+  returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+  merchantReturnDays: 2,
+  returnMethod: 'https://schema.org/ReturnInStore',
+  returnFees: 'https://schema.org/FreeReturn',
+};
+
+const SHIPPING_DETAILS = {
+  '@type': 'OfferShippingDetails',
+  shippingRate: {
+    '@type': 'MonetaryAmount',
+    value: '0',
+    currency: 'SAR',
+  },
+  shippingDestination: {
+    '@type': 'DefinedRegion',
+    addressCountry: 'SA',
+    addressRegion: ['Riyadh', 'Al-Kharj', 'Al-Dilam'],
+  },
+  deliveryTime: {
+    '@type': 'ShippingDeliveryTime',
+    handlingTime: {
+      '@type': 'QuantitativeValue',
+      minValue: 0,
+      maxValue: 1,
+      unitCode: 'DAY',
+    },
+    transitTime: {
+      '@type': 'QuantitativeValue',
+      minValue: 1,
+      maxValue: 2,
+      unitCode: 'DAY',
+    },
+  },
+};
+
+const createProductOffer = (price: string) => ({
+  '@type': 'Offer',
+  price,
+  priceCurrency: 'SAR',
+  availability: 'https://schema.org/InStock',
+  url: 'https://www.istenbat.com.sa/products',
+  hasMerchantReturnPolicy: MERCHANT_RETURN_POLICY,
+  shippingDetails: SHIPPING_DETAILS,
+});
+
 const PRODUCTS_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'ItemList',
@@ -59,13 +133,9 @@ const PRODUCTS_SCHEMA = {
           '@type': 'Brand',
           name: 'مزرعة بيت الاستنبات',
         },
-        offers: {
-          '@type': 'Offer',
-          price: '35.00',
-          priceCurrency: 'SAR',
-          availability: 'https://schema.org/InStock',
-          url: 'https://www.istenbat.com.sa/products',
-        },
+        aggregateRating: PRODUCT_AGGREGATE_RATING,
+        review: PRODUCT_REVIEWS,
+        offers: createProductOffer('35.00'),
       },
     },
     {
@@ -80,13 +150,9 @@ const PRODUCTS_SCHEMA = {
           '@type': 'Brand',
           name: 'مزرعة بيت الاستنبات',
         },
-        offers: {
-          '@type': 'Offer',
-          price: '25.00',
-          priceCurrency: 'SAR',
-          availability: 'https://schema.org/InStock',
-          url: 'https://www.istenbat.com.sa/products',
-        },
+        aggregateRating: PRODUCT_AGGREGATE_RATING,
+        review: PRODUCT_REVIEWS,
+        offers: createProductOffer('25.00'),
       },
     },
     {
@@ -101,13 +167,9 @@ const PRODUCTS_SCHEMA = {
           '@type': 'Brand',
           name: 'مزرعة بيت الاستنبات',
         },
-        offers: {
-          '@type': 'Offer',
-          price: '30.00',
-          priceCurrency: 'SAR',
-          availability: 'https://schema.org/InStock',
-          url: 'https://www.istenbat.com.sa/products',
-        },
+        aggregateRating: PRODUCT_AGGREGATE_RATING,
+        review: PRODUCT_REVIEWS,
+        offers: createProductOffer('30.00'),
       },
     },
     {
@@ -122,13 +184,9 @@ const PRODUCTS_SCHEMA = {
           '@type': 'Brand',
           name: 'مزرعة بيت الاستنبات',
         },
-        offers: {
-          '@type': 'Offer',
-          price: '95.00',
-          priceCurrency: 'SAR',
-          availability: 'https://schema.org/InStock',
-          url: 'https://www.istenbat.com.sa/products',
-        },
+        aggregateRating: PRODUCT_AGGREGATE_RATING,
+        review: PRODUCT_REVIEWS,
+        offers: createProductOffer('95.00'),
       },
     },
     {
@@ -143,13 +201,9 @@ const PRODUCTS_SCHEMA = {
           '@type': 'Brand',
           name: 'مزرعة بيت الاستنبات',
         },
-        offers: {
-          '@type': 'Offer',
-          price: '20.00',
-          priceCurrency: 'SAR',
-          availability: 'https://schema.org/InStock',
-          url: 'https://www.istenbat.com.sa/products',
-        },
+        aggregateRating: PRODUCT_AGGREGATE_RATING,
+        review: PRODUCT_REVIEWS,
+        offers: createProductOffer('20.00'),
       },
     },
   ],

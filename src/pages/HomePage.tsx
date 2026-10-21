@@ -14,6 +14,7 @@ import { getAssetUrl } from '../utils/assetPath';
 import { ImageWithFallback } from '../components/ImageWithFallback';
 import { VideoModal } from '../components/VideoModal';
 import { FarmVisualCatalog } from '../components/FarmVisualCatalog';
+import { GoogleReviewBridge } from '../components/GoogleReviewBridge';
 import {
   Award,
   ShieldCheck,
@@ -616,6 +617,11 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate }) => {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Interactive Google Review Bridge Widget */}
+          <div className="mt-12 sm:mt-16 max-w-3xl mx-auto">
+            <GoogleReviewBridge />
           </div>
         </div>
       </section>
