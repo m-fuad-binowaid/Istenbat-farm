@@ -24,9 +24,9 @@ export const GoogleReviewBridge: React.FC<GoogleReviewBridgeProps> = ({
   const [showToast, setShowToast] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string>('');
 
-  // Verified Google Maps link for Istenbat Farmstead
+  // Official direct Google Business Profile review link for Istenbat Farmstead
   const GOOGLE_REVIEW_URL =
-    customReviewUrl || 'https://maps.app.goo.gl/iiJmB7yHZx4ieqHj8';
+    customReviewUrl || 'https://g.page/r/CfGacFVDELdzEBM/review';
 
   const ratingDescriptions: Record<number, { ar: string; en: string }> = {
     5: { ar: 'ممتاز جداً 🌟🌟🌟🌟🌟 - ننصح به بشدة', en: 'Exceptional 🌟🌟🌟🌟🌟 - Highly Recommended' },
@@ -38,24 +38,45 @@ export const GoogleReviewBridge: React.FC<GoogleReviewBridgeProps> = ({
 
   const activeRating = hoverRating !== null ? hoverRating : rating;
 
-  // Safe clipboard helper
-  const copyToClipboard = async (text: string) => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+  // Safe clipboard helper with modern API + execCommand fallback for mobile browsers
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (!text) return false;
+
+    // 1. Try modern navigator.clipboard API
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
         await navigator.clipboard.writeText(text);
         return true;
+      } catch (clipErr) {
+        console.warn('navigator.clipboard.writeText failed, attempting execCommand fallback:', clipErr);
       }
+    }
+
+    // 2. Fallback to document.execCommand('copy')
+    try {
       const textArea = document.createElement('textarea');
       textArea.value = text;
       textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
+      textArea.style.top = '0';
+      textArea.style.left = '0';
+      textArea.style.width = '2em';
+      textArea.style.height = '2em';
+      textArea.style.padding = '0';
+      textArea.style.border = 'none';
+      textArea.style.outline = 'none';
+      textArea.style.boxShadow = 'none';
+      textArea.style.background = 'transparent';
+      textArea.style.opacity = '0';
+      textArea.setAttribute('readonly', '');
       document.body.appendChild(textArea);
       textArea.focus();
       textArea.select();
-      document.execCommand('copy');
+      textArea.setSelectionRange(0, text.length);
+      const successful = document.execCommand('copy');
       document.body.removeChild(textArea);
-      return true;
-    } catch {
+      return successful;
+    } catch (execErr) {
+      console.warn('execCommand copy fallback failed:', execErr);
       return false;
     }
   };
@@ -71,21 +92,21 @@ export const GoogleReviewBridge: React.FC<GoogleReviewBridgeProps> = ({
       setIsCopied(true);
       setToastMessage(
         language === 'ar'
-          ? 'تم نسخ تقييمك! جارٍ نقلك إلى خرائط Google للصقه واعتماده 🌟'
-          : 'Your review was copied! Redirecting to Google Maps to paste and confirm 🌟'
+          ? 'تم نسخ تقييمك! حدد الـ 5 نجوم في قوقل والصق النص واضغط نشر ⭐️'
+          : 'Your review was copied! Select 5 stars on Google, paste your text, and hit post ⭐️'
       );
     } else {
       setIsCopied(false);
       setToastMessage(
         language === 'ar'
-          ? 'شكراً لاختيارك التقييم! جارٍ نقلك إلى خرائط Google 🌟'
-          : 'Thank you for your rating! Redirecting to Google Maps 🌟'
+          ? 'شكراً لاختيارك التقييم! جارٍ نقلك إلى صفحة تقييم Google 🌟'
+          : 'Thank you for your rating! Redirecting to Google Reviews 🌟'
       );
     }
 
     setShowToast(true);
 
-    // Open Google Review destination in a new window/tab
+    // Open destination link in a new tab
     try {
       window.open(GOOGLE_REVIEW_URL, '_blank', 'noopener,noreferrer');
     } catch (err) {
