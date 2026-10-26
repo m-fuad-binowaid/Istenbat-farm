@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageRoute, Product, CategoryItem, ActivityCard, StoreLocation } from '../types';
 import { useFarmData } from '../context/FarmDataContext';
@@ -48,6 +48,11 @@ import {
   ToggleRight,
   Crown,
   User,
+  Cloud,
+  CloudOff,
+  Download,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -155,10 +160,24 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     toggleLocationStatus,
     resetLocations,
     resetAllToDefaults,
+    cloudStatus,
+    cloudError,
+    lastCloudSaveAt,
+    setAdminSessionPin,
+    saveToCloud,
+    exportData,
+    importData,
   } = useFarmData();
 
   // ─── RBAC Auth State ────────────────────────────────────────────
+  // A persisted role is only honoured when this browser tab also holds the admin PIN
+  // (sessionStorage) — the PIN is required to authorize Cloudflare KV writes.
   const [activeRole, setActiveRole] = useState<Role | null>(() => {
+    let hasSessionPin = false;
+    try {
+      hasSessionPin = !!sessionStorage.getItem('estinbat_admin_session_pin');
+    } catch {}
+    if (!hasSessionPin) return null;
     return (localStorage.getItem('estinbat_active_role') as Role | null) || null;
   });
   const isAuthenticated = activeRole !== null;
@@ -290,6 +309,65 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
     }, 3500);
   };
 
+  // ─── Cloud Sync Feedback (Cloudflare KV) ───────────────────────
+  useEffect(() => {
+    if (lastCloudSaveAt) {
+      showToast('تم الحفظ والمزامنة السحابية بنجاح ☁️ (Cloudflare KV)');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastCloudSaveAt]);
+
+  const handleManualCloudSave = async () => {
+    const result = await saveToCloud();
+    if (!result.ok && (result.conflict || cloudStatus === 'error')) {
+      // Conflict or unverified remote copy: offer an explicit, confirmed overwrite.
+      const confirmed = window.confirm(
+        'لم يتم الحفظ لحماية البيانات السحابية.\n\nهل تريد فرض الحفظ واستبدال النسخة السحابية بالنسخة الظاهرة أمامك الآن؟\n(يُنصح بتصدير نسخة احتياطية أولاً)'
+      );
+      if (confirmed) await saveToCloud({ force: true });
+    }
+  };
+
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleExportBackup = () => {
+    const payload = exportData();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+    a.href = url;
+    a.download = `istenbat-backup-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('تم تصدير النسخة الاحتياطية بنجاح 💾');
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      if (
+        !window.confirm(
+          'سيتم استبدال جميع البيانات الحالية (المنتجات، الفروع، التصنيفات، الأنشطة، بيانات التواصل) بمحتوى الملف ثم مزامنتها سحابياً. هل تريد المتابعة؟'
+        )
+      ) {
+        return;
+      }
+      if (importData(parsed)) {
+        showToast('تم استيراد البيانات بنجاح، جارٍ المزامنة السحابية...');
+      } else {
+        alert('ملف غير صالح: يجب أن يكون نسخة احتياطية صادرة من لوحة التحكم.');
+      }
+    } catch {
+      alert('تعذر قراءة الملف. تأكد أنه ملف JSON صالح.');
+    }
+  };
+
   // ─── RBAC Auth Handlers ─────────────────────────────────────────
   const handlePinSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -307,6 +385,8 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
         savePermissions(DEFAULT_PERMISSIONS);
       }
       localStorage.setItem('estinbat_active_role', selectedLoginRole);
+      // Register the PIN for this tab so admin saves can authenticate against /api/data
+      setAdminSessionPin(pinInput);
       setActiveRole(selectedLoginRole);
       setPermissionsState(getPermissions());
       setPinError('');
@@ -334,6 +414,7 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
   const handleLogout = () => {
     setActiveRole(null);
+    setAdminSessionPin(null);
     localStorage.removeItem('estinbat_active_role');
     setPinInput('');
     setPinError('');
@@ -1139,6 +1220,100 @@ export const AdminPage: React.FC<AdminPageProps> = ({ onNavigate }) => {
 
       {/* Main Container */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-8">
+        {/* Cloud Sync Status & Backup Tools (Cloudflare KV) */}
+        <section
+          aria-label="حالة المزامنة السحابية"
+          className="max-w-5xl mx-auto mb-6 space-y-3"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl bg-white border border-[#E7DECD] shadow-sm">
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold" role="status" aria-live="polite">
+              {cloudStatus === 'loading' && (
+                <><Loader2 className="w-4 h-4 animate-spin text-stone-500" /><span className="text-stone-600">جارٍ تحميل البيانات السحابية...</span></>
+              )}
+              {cloudStatus === 'synced' && (
+                <><Cloud className="w-4 h-4 text-emerald-600" /><span className="text-emerald-800">متزامن مع السحابة (Cloudflare KV)</span></>
+              )}
+              {cloudStatus === 'local-only' && (
+                <><CloudOff className="w-4 h-4 text-amber-600" /><span className="text-amber-800">لا توجد نسخة سحابية بعد — اضغط "حفظ ومزامنة" لرفع البيانات الحالية</span></>
+              )}
+              {cloudStatus === 'dirty' && (
+                <><RefreshCw className="w-4 h-4 text-amber-600" /><span className="text-amber-800">تغييرات بانتظار المزامنة...</span></>
+              )}
+              {cloudStatus === 'saving' && (
+                <><Loader2 className="w-4 h-4 animate-spin text-emerald-600" /><span className="text-emerald-800">جارٍ الحفظ السحابي...</span></>
+              )}
+              {cloudStatus === 'error' && (
+                <><CloudOff className="w-4 h-4 text-red-600" /><span className="text-red-700">فشلت المزامنة السحابية</span></>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                id="admin-cloud-save"
+                type="button"
+                onClick={handleManualCloudSave}
+                disabled={cloudStatus === 'saving' || cloudStatus === 'loading'}
+                className="px-3.5 py-2 rounded-xl bg-[#1C3322] hover:bg-[#274730] disabled:opacity-50 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                <span>حفظ ومزامنة</span>
+              </button>
+              {isOwner && (
+                <>
+                  <button
+                    id="admin-export-backup"
+                    type="button"
+                    onClick={handleExportBackup}
+                    className="px-3.5 py-2 rounded-xl bg-[#F4EFE6] hover:bg-[#EADFCB] border border-[#E7DECD] text-[#1C3322] text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>تصدير نسخة احتياطية</span>
+                  </button>
+                  <button
+                    id="admin-import-backup"
+                    type="button"
+                    onClick={() => importInputRef.current?.click()}
+                    className="px-3.5 py-2 rounded-xl bg-[#F4EFE6] hover:bg-[#EADFCB] border border-[#E7DECD] text-[#1C3322] text-xs font-black flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>استيراد البيانات</span>
+                  </button>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    onChange={handleImportBackup}
+                    className="hidden"
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          {cloudStatus === 'error' && cloudError && (
+            <div
+              role="alert"
+              className="flex items-start gap-3 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-800"
+            >
+              <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5 text-red-600" />
+              <div className="flex-1 text-xs sm:text-sm leading-relaxed">
+                <p className="font-black mb-1">⚠️ لم تتم المزامنة السحابية — التغييرات غير محفوظة على السحابة</p>
+                <p>{cloudError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleManualCloudSave}
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>إعادة المحاولة</span>
+              </button>
+            </div>
+          )}
+        </section>
+
         {/* Navigation Tabs — dynamically filtered for assistant role */}
         <div className="flex items-center gap-2 p-1.5 bg-[#F4EFE6] rounded-2xl border border-[#E7DECD] max-w-5xl mx-auto mb-8 shadow-inner overflow-x-auto">
           {canAccessTab('products') && (

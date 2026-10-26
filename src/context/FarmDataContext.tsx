@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Product, ContactSettings, CategoryItem, ActivityCard, StoreLocation } from '../types';
 import {
   OFFICIAL_INFO,
@@ -8,37 +8,95 @@ import {
   INITIAL_LOCATIONS,
 } from '../data/content';
 
-// ─── KV Keys ─────────────────────────────────────────────────────────────────
-const KV_KEY_LOCATIONS   = 'estinbat_locations';
-const KV_KEY_PRODUCTS    = 'estinbat_products';
-const KV_KEY_CATEGORIES  = 'estinbat_categories';
-const KV_KEY_GALLERY     = 'estinbat_gallery';
-const KV_KEY_CONTACT     = 'estinbat_contact';
+// ─── Cloud Sync Types ────────────────────────────────────────────────────────
+/**
+ * Cloud persistence model (Cloudflare KV via /api/data):
+ *  - On load, the provider performs a READ-ONLY GET. It never writes during hydration.
+ *  - Visitors never write: a POST is only sent when an admin PIN session is active.
+ *  - Every admin mutation triggers a debounced POST of the COMPLETE dataset.
+ */
+export type CloudStatus =
+  | 'loading'    // initial GET in progress
+  | 'synced'     // in-memory state matches the cloud record
+  | 'local-only' // cloud empty (404) — showing local seed/cache until the admin saves
+  | 'dirty'      // unsaved admin changes pending upload
+  | 'saving'     // POST in progress
+  | 'error';     // last cloud read/write failed — see cloudError
+
+export interface FarmDataSnapshot {
+  contactInfo: ContactSettings;
+  products: Product[];
+  categories: CategoryItem[];
+  activities: ActivityCard[];
+  locations: StoreLocation[];
+}
+
+export interface FarmDataExport {
+  app: 'istenbat-farm';
+  version: 1;
+  exportedAt: string;
+  revision: number;
+  data: FarmDataSnapshot;
+}
+
+export interface CloudSaveResult {
+  ok: boolean;
+  status?: number;
+  conflict?: boolean;
+  error?: string;
+}
+
+type HydrationState = 'pending' | 'remote' | 'empty' | 'failed';
+
+type RemoteResult =
+  | { kind: 'remote'; revision: number; data: Partial<FarmDataSnapshot> }
+  | { kind: 'empty' }
+  | { kind: 'failed' };
+
+const SESSION_KEY_ADMIN_PIN = 'estinbat_admin_session_pin';
+const AUTO_SAVE_DEBOUNCE_MS = 600;
 
 // ─── KV API Helpers ───────────────────────────────────────────────────────────
-/** Fetch a value from Cloudflare KV via the Pages Function. Returns null on any error. */
-async function kvGet<T>(key: string): Promise<T | null> {
+/** READ-ONLY fetch of the master farm record from Cloudflare KV. Never writes. */
+async function fetchRemoteData(): Promise<RemoteResult> {
   try {
-    const res = await fetch(`/api/data?key=${encodeURIComponent(key)}`, {
+    const res = await fetch('/api/data', {
       cache: 'no-store',
+      headers: { Accept: 'application/json' },
     });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { data: T | null };
-    return json.data ?? null;
+    if (res.status === 404) return { kind: 'empty' };
+    if (!res.ok) return { kind: 'failed' };
+    // Guard against SPA fallbacks (e.g. local Vite dev returning index.html with 200).
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) return { kind: 'failed' };
+    const body = (await res.json()) as {
+      exists?: boolean;
+      revision?: number;
+      data?: Partial<FarmDataSnapshot>;
+    };
+    if (!body?.exists || !body.data || typeof body.data !== 'object') return { kind: 'empty' };
+    return {
+      kind: 'remote',
+      revision: typeof body.revision === 'number' ? body.revision : 0,
+      data: body.data,
+    };
   } catch {
-    return null;
+    return { kind: 'failed' };
   }
 }
 
-/** Write a value to Cloudflare KV via the Pages Function. Fire-and-forget. */
-function kvPut(key: string, data: unknown): void {
-  fetch('/api/data', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key, data }),
-  }).catch((err) => {
-    console.warn(`[KV] Failed to persist key "${key}":`, err);
-  });
+function isValidSnapshot(d: unknown): d is FarmDataSnapshot {
+  if (!d || typeof d !== 'object') return false;
+  const x = d as Record<string, unknown>;
+  return (
+    !!x.contactInfo &&
+    typeof x.contactInfo === 'object' &&
+    !Array.isArray(x.contactInfo) &&
+    Array.isArray(x.products) &&
+    Array.isArray(x.categories) &&
+    Array.isArray(x.activities) &&
+    Array.isArray(x.locations)
+  );
 }
 
 export const DEFAULT_CONTACT_SETTINGS: ContactSettings = {
@@ -89,6 +147,18 @@ interface FarmDataContextType {
   resetLocations: () => void;
   resetAllToDefaults: () => void;
   buildWhatsAppUrl: (message: string) => string;
+  // ─── Cloud sync (Cloudflare KV) ───
+  cloudStatus: CloudStatus;
+  cloudError: string | null;
+  /** Timestamp of the last successful admin POST to KV (null until first save in this session). */
+  lastCloudSaveAt: number | null;
+  /** Register / clear the admin PIN used to authorize cloud writes. Visitors never have one. */
+  setAdminSessionPin: (pin: string | null) => void;
+  /** Push the complete current dataset to Cloudflare KV. */
+  saveToCloud: (opts?: { force?: boolean }) => Promise<CloudSaveResult>;
+  exportData: () => FarmDataExport;
+  /** Import a JSON backup (export file or raw dataset). Returns false if the shape is invalid. */
+  importData: (payload: unknown) => boolean;
 }
 
 const FarmDataContext = createContext<FarmDataContextType | undefined>(undefined);
@@ -181,101 +251,245 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return INITIAL_PRODUCTS;
   });
 
-  // ─── KV hydration flag ─────────────────────────────────────────────────────
-  // Prevents the initial state-set (during KV hydration) from triggering redundant writes.
-  const kvHydratedRef = useRef(false);
+  // ─── Cloud sync state ──────────────────────────────────────────────────────
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>('loading');
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [lastCloudSaveAt, setLastCloudSaveAt] = useState<number | null>(null);
+  const [saveTick, setSaveTick] = useState(0);
 
-  // ─── On Mount: Hydrate from Cloudflare KV ──────────────────────────────────
+  const hydrationRef = useRef<HydrationState>('pending');
+  const revisionRef = useRef<number>(0);
+  const savingRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+  const adminPinRef = useRef<string | null>(
+    (() => {
+      try {
+        return sessionStorage.getItem(SESSION_KEY_ADMIN_PIN);
+      } catch {
+        return null;
+      }
+    })()
+  );
+
+  // Always-current snapshot for the save routine (effects run after commit, so this is fresh).
+  const dataRef = useRef<FarmDataSnapshot>({ contactInfo, products, categories, activities, locations });
+  dataRef.current = { contactInfo, products, categories, activities, locations };
+
+  // ─── On Mount: READ-ONLY hydration from Cloudflare KV ──────────────────────
+  // ⚠️ This effect must NEVER write to KV. If the cloud is empty or unreachable we
+  // simply keep rendering the local cache / seed data.
   useEffect(() => {
     let cancelled = false;
     async function hydrateFromKV() {
-      const [kvLocations, kvProducts, kvCategories, kvActivities, kvContact] =
-        await Promise.all([
-          kvGet<StoreLocation[]>(KV_KEY_LOCATIONS),
-          kvGet<Product[]>(KV_KEY_PRODUCTS),
-          kvGet<CategoryItem[]>(KV_KEY_CATEGORIES),
-          kvGet<ActivityCard[]>(KV_KEY_GALLERY),
-          kvGet<ContactSettings>(KV_KEY_CONTACT),
-        ]);
+      const result = await fetchRemoteData();
       if (cancelled) return;
-      if (kvLocations && Array.isArray(kvLocations) && kvLocations.length > 0) {
-        setLocations(kvLocations);
-        try { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(kvLocations)); } catch {}
+
+      if (result.kind === 'remote') {
+        const d = result.data;
+        if (Array.isArray(d.locations)) {
+          setLocations(d.locations);
+          try { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(d.locations)); } catch {}
+        }
+        if (Array.isArray(d.products)) {
+          setProducts(d.products);
+          try { localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(d.products)); } catch {}
+        }
+        if (Array.isArray(d.categories)) {
+          setCategories(d.categories);
+          try { localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(d.categories)); } catch {}
+        }
+        if (Array.isArray(d.activities)) {
+          setActivities(d.activities);
+          try { localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(d.activities)); } catch {}
+        }
+        if (d.contactInfo && typeof d.contactInfo === 'object') {
+          const merged = { ...DEFAULT_CONTACT_SETTINGS, ...d.contactInfo };
+          setContactInfo(merged);
+          try { localStorage.setItem(STORAGE_KEY_CONTACT, JSON.stringify(merged)); } catch {}
+        }
+        revisionRef.current = result.revision;
+        hydrationRef.current = 'remote';
+        setCloudStatus('synced');
+        setCloudError(null);
+      } else if (result.kind === 'empty') {
+        revisionRef.current = 0;
+        hydrationRef.current = 'empty';
+        setCloudStatus('local-only');
+      } else {
+        hydrationRef.current = 'failed';
+        setCloudStatus('error');
+        setCloudError(
+          'تعذر قراءة البيانات السحابية (Cloudflare KV). يتم عرض النسخة المحلية، ولن يتم الحفظ التلقائي لتجنب الكتابة فوق البيانات السحابية.'
+        );
       }
-      if (kvProducts && Array.isArray(kvProducts) && kvProducts.length > 0) {
-        setProducts(kvProducts);
-        try { localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(kvProducts)); } catch {}
+
+      // Admin edits made while hydration was in flight: flush them now (only if safe).
+      if (pendingSaveRef.current && hydrationRef.current !== 'failed') {
+        pendingSaveRef.current = false;
+        setSaveTick((t) => t + 1);
       }
-      if (kvCategories && Array.isArray(kvCategories) && kvCategories.length > 0) {
-        setCategories(kvCategories);
-        try { localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(kvCategories)); } catch {}
-      }
-      if (kvActivities && Array.isArray(kvActivities) && kvActivities.length > 0) {
-        setActivities(kvActivities);
-        try { localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(kvActivities)); } catch {}
-      }
-      if (kvContact && typeof kvContact === 'object') {
-        const merged = { ...DEFAULT_CONTACT_SETTINGS, ...kvContact };
-        setContactInfo(merged);
-        try { localStorage.setItem(STORAGE_KEY_CONTACT, JSON.stringify(merged)); } catch {}
-      }
-      // Only enable KV writes after hydration completes
-      kvHydratedRef.current = true;
     }
     hydrateFromKV();
     return () => { cancelled = true; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ─── Persist contactInfo to localStorage + KV on change ────────────────────
+  // ─── Mirror state to localStorage (offline cache only — never touches KV) ──
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_CONTACT, JSON.stringify(contactInfo));
     } catch (e) {
       console.error('Failed to save contact info to localStorage', e);
     }
-    if (kvHydratedRef.current) kvPut(KV_KEY_CONTACT, contactInfo);
   }, [contactInfo]);
 
-  // ─── Persist categories to localStorage + KV on change ─────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_CATEGORIES, JSON.stringify(categories));
     } catch (e) {
       console.error('Failed to save categories to localStorage', e);
     }
-    if (kvHydratedRef.current) kvPut(KV_KEY_CATEGORIES, categories);
   }, [categories]);
 
-  // ─── Persist activities to localStorage + KV on change ─────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_ACTIVITIES, JSON.stringify(activities));
     } catch (e) {
       console.error('Failed to save activities to localStorage', e);
     }
-    if (kvHydratedRef.current) kvPut(KV_KEY_GALLERY, activities);
   }, [activities]);
 
-  // ─── Persist store locations to localStorage + KV on change ────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations));
     } catch (e) {
       console.error('Failed to save store locations to localStorage', e);
     }
-    if (kvHydratedRef.current) kvPut(KV_KEY_LOCATIONS, locations);
   }, [locations]);
 
-  // ─── Persist products to localStorage + KV on change ───────────────────────
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(products));
     } catch (e) {
       console.error('Failed to save products to localStorage', e);
     }
-    if (kvHydratedRef.current) kvPut(KV_KEY_PRODUCTS, products);
   }, [products]);
+
+  // ─── Cloud write (admin only) ──────────────────────────────────────────────
+  const setAdminSessionPin = useCallback((pin: string | null) => {
+    adminPinRef.current = pin;
+    try {
+      if (pin) sessionStorage.setItem(SESSION_KEY_ADMIN_PIN, pin);
+      else sessionStorage.removeItem(SESSION_KEY_ADMIN_PIN);
+    } catch {
+      /* sessionStorage unavailable — PIN kept in memory only */
+    }
+  }, []);
+
+  const saveToCloud = useCallback(async (opts: { force?: boolean } = {}): Promise<CloudSaveResult> => {
+    const pin = adminPinRef.current;
+    if (!pin) {
+      const msg = 'لا توجد جلسة إدارة نشطة. سجّل الدخول برمز PIN لتفعيل المزامنة السحابية.';
+      setCloudStatus('error');
+      setCloudError(msg);
+      return { ok: false, error: msg };
+    }
+    if (hydrationRef.current === 'pending') {
+      pendingSaveRef.current = true;
+      return { ok: false, error: 'pending-hydration' };
+    }
+    if (hydrationRef.current === 'failed' && !opts.force) {
+      const msg =
+        'لم يتم التحقق من النسخة السحابية الحالية، لذلك أُوقف الحفظ التلقائي لحماية البيانات. استخدم "فرض الحفظ" إذا كنت متأكداً أن هذه النسخة هي الأحدث.';
+      setCloudStatus('error');
+      setCloudError(msg);
+      return { ok: false, error: msg };
+    }
+    if (savingRef.current) {
+      pendingSaveRef.current = true;
+      return { ok: false, error: 'busy' };
+    }
+
+    savingRef.current = true;
+    setCloudStatus('saving');
+    setCloudError(null);
+    const snapshot = dataRef.current;
+    let succeeded = false;
+
+    try {
+      const res = await fetch('/api/data', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${pin}`,
+        },
+        body: JSON.stringify({
+          data: snapshot,
+          baseRevision: revisionRef.current,
+          force: !!opts.force,
+        }),
+      });
+
+      let body: { success?: boolean; timestamp?: number; revision?: number } | null = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+
+      if (res.ok && body?.success) {
+        succeeded = true;
+        revisionRef.current = typeof body.revision === 'number' ? body.revision : revisionRef.current + 1;
+        hydrationRef.current = 'remote';
+        setLastCloudSaveAt(body.timestamp ?? Date.now());
+        setCloudStatus(pendingSaveRef.current ? 'dirty' : 'synced');
+        return { ok: true, status: res.status };
+      }
+
+      let msg: string;
+      if (res.status === 401) {
+        msg = 'رمز المرور غير مصرّح له بالكتابة السحابية (401). تأكد من رمز PIN أو من متغير ADMIN_PINS في إعدادات Cloudflare. التغييرات محفوظة على هذا الجهاز فقط.';
+      } else if (res.status === 409) {
+        msg = 'تم تعديل البيانات السحابية من جهاز آخر بعد فتح هذه الصفحة (409). صدّر نسخة احتياطية ثم أعد تحميل الصفحة لجلب أحدث نسخة، أو استخدم "فرض الحفظ".';
+      } else {
+        msg = `فشلت المزامنة السحابية (HTTP ${res.status}). التغييرات محفوظة على هذا الجهاز فقط.`;
+      }
+      pendingSaveRef.current = false;
+      setCloudStatus('error');
+      setCloudError(msg);
+      return { ok: false, status: res.status, conflict: res.status === 409, error: msg };
+    } catch (err) {
+      console.warn('[KV] Cloud save failed:', err);
+      const msg = 'تعذر الاتصال بالخادم السحابي. التغييرات محفوظة على هذا الجهاز فقط — أعد المحاولة عند توفر الاتصال.';
+      pendingSaveRef.current = false;
+      setCloudStatus('error');
+      setCloudError(msg);
+      return { ok: false, error: msg };
+    } finally {
+      savingRef.current = false;
+      // Changes made while the request was in flight → push them in a follow-up save.
+      if (succeeded && pendingSaveRef.current) {
+        pendingSaveRef.current = false;
+        setSaveTick((t) => t + 1);
+      }
+    }
+  }, []);
+
+  // Debounced auto-save, triggered ONLY by admin mutations (never by hydration).
+  useEffect(() => {
+    if (saveTick === 0) return;
+    const timer = setTimeout(() => {
+      void saveToCloud();
+    }, AUTO_SAVE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [saveTick, saveToCloud]);
+
+  /** Called by every mutation. Visitors (no admin PIN) never trigger a cloud write. */
+  const markDirty = () => {
+    if (!adminPinRef.current) return;
+    setCloudStatus('dirty');
+    setSaveTick((t) => t + 1);
+  };
 
   const updateContactInfo = (newInfo: Partial<ContactSettings>) => {
     setContactInfo((prev) => {
@@ -290,10 +504,12 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         whatsappRaw: raw,
       };
     });
+    markDirty();
   };
 
   const resetContactInfo = () => {
     setContactInfo(DEFAULT_CONTACT_SETTINGS);
+    markDirty();
   };
 
   const addCategory = (categoryData: Omit<CategoryItem, 'id'> & { id?: string }): CategoryItem => {
@@ -306,6 +522,7 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       nameEn: categoryData.nameEn?.trim() || categoryData.nameAr.trim(),
     };
     setCategories((prev) => [...prev, newCategory]);
+    markDirty();
     return newCategory;
   };
 
@@ -328,14 +545,17 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })
       );
     }
+    markDirty();
   };
 
   const deleteCategory = (id: string) => {
     setCategories((prev) => prev.filter((c) => c.id !== id));
+    markDirty();
   };
 
   const resetCategories = () => {
     setCategories(INITIAL_CATEGORIES);
+    markDirty();
   };
 
   const addProduct = (productData: Omit<Product, 'id'> & { id?: string }) => {
@@ -349,16 +569,19 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isCertifiedOrganic: productData.isCertifiedOrganic !== undefined ? productData.isCertifiedOrganic : true,
     };
     setProducts((prev) => [newProduct, ...prev]);
+    markDirty();
   };
 
   const updateProduct = (id: string, updated: Partial<Product>) => {
     setProducts((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updated } : item))
     );
+    markDirty();
   };
 
   const deleteProduct = (id: string) => {
     setProducts((prev) => prev.filter((item) => item.id !== id));
+    markDirty();
   };
 
   const toggleProductAvailability = (id: string) => {
@@ -367,16 +590,19 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         item.id === id ? { ...item, isAvailable: item.isAvailable === false ? true : false } : item
       )
     );
+    markDirty();
   };
 
   const resetProducts = () => {
     setProducts(INITIAL_PRODUCTS);
+    markDirty();
   };
 
   const updateActivity = (id: string, updated: Partial<ActivityCard>) => {
     setActivities((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updated } : item))
     );
+    markDirty();
   };
 
   const addActivity = (activityData: Omit<ActivityCard, 'id'> & { id?: string }): ActivityCard => {
@@ -387,15 +613,18 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       id: cleanId,
     };
     setActivities((prev) => [...prev, newActivity]);
+    markDirty();
     return newActivity;
   };
 
   const deleteActivity = (id: string) => {
     setActivities((prev) => prev.filter((item) => item.id !== id));
+    markDirty();
   };
 
   const resetActivities = () => {
     setActivities(INITIAL_ACTIVITIES);
+    markDirty();
   };
 
   const addLocation = (locationData: Omit<StoreLocation, 'id'> & { id?: string }): StoreLocation => {
@@ -407,6 +636,7 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       isActive: locationData.isActive !== undefined ? locationData.isActive : true,
     };
     setLocations((prev) => [...prev, newLocation]);
+    markDirty();
     return newLocation;
   };
 
@@ -414,10 +644,12 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setLocations((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updated } : item))
     );
+    markDirty();
   };
 
   const deleteLocation = (id: string) => {
     setLocations((prev) => prev.filter((item) => item.id !== id));
+    markDirty();
   };
 
   const toggleLocationStatus = (id: string) => {
@@ -426,10 +658,12 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         item.id === id ? { ...item, isActive: !item.isActive } : item
       )
     );
+    markDirty();
   };
 
   const resetLocations = () => {
     setLocations(INITIAL_LOCATIONS);
+    markDirty();
   };
 
   const resetAllToDefaults = () => {
@@ -447,12 +681,32 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch (e) {
       console.error(e);
     }
-    // Reset KV so other devices also pick up defaults on next load
-    kvPut(KV_KEY_CONTACT,    DEFAULT_CONTACT_SETTINGS);
-    kvPut(KV_KEY_PRODUCTS,   INITIAL_PRODUCTS);
-    kvPut(KV_KEY_CATEGORIES, INITIAL_CATEGORIES);
-    kvPut(KV_KEY_GALLERY,    INITIAL_ACTIVITIES);
-    kvPut(KV_KEY_LOCATIONS,  INITIAL_LOCATIONS);
+    // Explicit admin action → goes through the authenticated cloud save path only.
+    markDirty();
+  };
+
+  // ─── Backup tools ──────────────────────────────────────────────────────────
+  const exportData = (): FarmDataExport => ({
+    app: 'istenbat-farm',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    revision: revisionRef.current,
+    data: dataRef.current,
+  });
+
+  const importData = (payload: unknown): boolean => {
+    const candidate =
+      payload && typeof payload === 'object' && 'data' in (payload as Record<string, unknown>)
+        ? (payload as Record<string, unknown>).data
+        : payload;
+    if (!isValidSnapshot(candidate)) return false;
+    setContactInfo({ ...DEFAULT_CONTACT_SETTINGS, ...candidate.contactInfo });
+    setProducts(candidate.products);
+    setCategories(candidate.categories);
+    setActivities(candidate.activities);
+    setLocations(candidate.locations);
+    markDirty();
+    return true;
   };
 
   const buildWhatsAppUrl = (message: string) => {
@@ -490,6 +744,13 @@ export const FarmDataProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         resetLocations,
         resetAllToDefaults,
         buildWhatsAppUrl,
+        cloudStatus,
+        cloudError,
+        lastCloudSaveAt,
+        setAdminSessionPin,
+        saveToCloud,
+        exportData,
+        importData,
       }}
     >
       {children}
